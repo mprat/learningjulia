@@ -1,0 +1,39 @@
+title: Learning Julia
+author:
+  name: Michele Pratusevich
+  email: michele.pratusevich@gmail.com
+description: > 
+  A blog documenting my learning of the Julia programming
+  language. My background is in computer vision and computational
+  photography, so the posts and projects will have a vision-and-graphics
+  bent.
+baseurl: ""
+url: "http://learningjulia.com"
+twitter_username: jekyllrb
+github_username:  mprat
+
+# Build settings
+safe: true
+markdown: kramdown
+highlighter: rouge
+theme: minima
+gems:
+  - jekyll-feed
+  - jekyll-coffeescript
+  - jekyll-gist
+  - jekyll-mentions
+  - jekyll-paginate
+  - jekyll-redirect-from
+exclude:
+  - Gemfile
+  - Gemfile.lock
+whitelist:
+  - jekyll-coffeescript
+  - jekyll-gist
+  - jekyll-mentions
+  - jekyll-paginate
+  - jekyll-redirect-from
+
+kramdown:
+  input: GFM
+  hard_wrap: false
