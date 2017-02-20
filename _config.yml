@@ -1,7 +1,7 @@
 title: Learning Julia
 author:
   name: Michele Pratusevich
-  email: michele.pratusevich@gmail.com
+  email: mail@learningjulia.com
 description: > 
   A blog documenting my learning of the Julia programming
   language. My background is in computer vision and computational
@@ -9,8 +9,9 @@ description: >
   bent.
 baseurl: ""
 url: "http://learningjulia.com"
-twitter_username: jekyllrb
+twitter_username: learningjulia
 github_username:  mprat
+google_analytics: UA-44633314-3
 
 # Build settings
 safe: true
