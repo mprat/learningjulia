@@ -38,3 +38,5 @@ whitelist:
 kramdown:
   input: GFM
   hard_wrap: false
+
+excerpt_separator: <!--more-->
