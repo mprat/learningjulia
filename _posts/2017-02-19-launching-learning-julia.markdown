@@ -88,6 +88,6 @@ include _notebooks/NOTEBOOK_NAME.html
 
 There is one annoying post-processing step (which I will eventually write a post-processor for in Jupyter, but for now am content doing it manually). when Julia renders inline SVGs, it includes an HTML line `DOCTYPE`, which does not get rendered properly by Jinja templates on the Jekyll include. So I manually delete the `DOCTYPE` line in the `NOTEBOOK_NAME.html` rendering, and the SVGs get rendered properly.
 
-A second annoyance is that I had to create a custom [nbconvert template file]() based off of the `basic.tpl` file provided. I wanted to make sure that all the output cells in my notebook were annotated with the `Out[]` tag, and the easiest way to do that was to modify the template a little bit.
+A second annoyance is that I had to create a custom [nbconvert template file](https://github.com/mprat/learningjulia/blob/master/notebooks/basic.tpl) based off of the `basic.tpl` file provided. I wanted to make sure that all the output cells in my notebook were annotated with the `Out[]` tag, and the easiest way to do that was to modify the template a little bit.
 
 I hope you enjoy following me on my journey through Julia. I know I will enjoy sharing it with you.
