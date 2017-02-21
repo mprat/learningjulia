@@ -12,6 +12,8 @@ url: "http://learningjulia.com"
 twitter_username: learningjulia
 github_username:  mprat
 google_analytics: UA-44633314-3
+disqus:
+  shortname: learningjulia
 
 # Build settings
 safe: true
