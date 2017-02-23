@@ -68,8 +68,8 @@ The source code for all the notebooks (the `.ipynb` files) are posted at the [Gi
 The awesome thing about IJulia notebooks is that you can export them into `.html` format to embed into a blog. Once finished with the notebook and ready for export, just run `nbconvert`:
 
 {% highlight bash %}
-jupyter nbconvert --execute --allow-errors
-	--output-dir=../_includes/notebooks/
+jupyter nbconvert --execute --allow-errors \
+	--output-dir=../_includes/notebooks/ \
 	--to=html --template=basic.tpl NOTEBOOK_NAME.ipynb
 {% endhighlight %}
 
