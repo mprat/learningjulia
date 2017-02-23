@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Launching Learning Julia"
-date:   2017-02-19 20:00:04 -0500
+date:   2017-02-19
 ---
 
 I am launching this blog to document and share my experience learning the [Julia](http://julialang.org) programming language. My learning style is to learn by doing - I'm sure the things I do at first will be wrong, against code style, and inefficient. But that is the best way to learn: you try something out, realize it doesn't work, and end up learning something.
