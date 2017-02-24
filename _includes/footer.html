@@ -34,6 +34,10 @@
         <p>{{ site.description | escape }}</p>
       </div>
 
+      {% if jekyll.environment == "production" %}
+        {% include adsense.html %}
+      {% endif %}
+
       <div class="footer-col">
         <i>Copyright 2017, Michele Pratusevich, Learnable LLC</i>
       </div>
