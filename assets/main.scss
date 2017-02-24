@@ -38,12 +38,14 @@ $on-laptop:        800px;
 // Import partials from the `minima` theme.
 @import "minima";
 
-.input_prompt, .output_prompt {
-	width: 0px;
-	position: relative;
-	left: -8%;
-	float: left;
-	margin-top: 3px;
+@media (min-width: 800px) {
+	.input_prompt, .output_prompt {
+		width: 0px;
+		position: relative;
+		left: -8%;
+		float: left;
+		margin-top: 3px;
+	}
 }
 
 .output_prompt {
