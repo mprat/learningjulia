@@ -52,6 +52,10 @@ $on-laptop:        800px;
 	color: rgba(0, 63, 255, 0.92);
 }
 
+.output_text > pre {
+	background-color: $background-color;
+}
+
 .input_prompt {
 	color: #a00;
 }
@@ -68,4 +72,10 @@ hr {
 	display: inline;
 	float: left;
 	margin-top: 3px;
+}
+
+svg {
+	max-width: 100%;
+	vertical-align: middle;
+	margin-bottom: 3px;
 }
