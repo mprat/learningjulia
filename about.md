@@ -10,6 +10,14 @@ I am a computer vision research scientist. I use [Python](http://python.org) and
 
 [Friends](http://blog.robindeits.com/) have been encouraging me to learn Julia to fix some of my biggest woes with Python and numpy and beyond. To avoid procrastinating on learning Julia, I decided to make this blog to document and share my experience. It will provide motivation for me to learn and hack around with Julia, documenting my entire progress.
 
-If you have any ideas for projects for me to do, libraries for me to look at, or interesting content you want to see on this site, feel free to <a href="mailto:{{ site.email }}">send me an email</a>. I also do lots of things outside of computer vision, you can read more about me on [my personal blog](http://mprat.org).
+If you have any ideas for projects for me to do, libraries for me to look at, or interesting content you want to see on this site, feel free to <a href="mailto:{{ site.email }}">send me an email</a> or reach out to me on [Twitter](https://twitter.com/intent/tweet?via=learningjulia&hashtags=julialang){:target="_blank"}. I also do lots of things outside of computer vision, you can read more about me on [my personal blog](http://mprat.org).
+
+If you want to follow along, you can:
+
+1. Add Learning Julia directly to your [Feedly](http://cloud.feedly.com/#subscription%2Ffeed%2Fhttp%3A%2F%2Flearningjulia.com%2Ffeed.xml){:target="_blank"}
+2. Or your [favorite RSS reader]({{ "/feed.xml" | relative_url }}){:target="_blank"}
+3. Follow @{{ site.twitter.username }} on [Twitter](https://twitter.com/intent/follow/?screen_name=learningjulia){:target="_blank"}
+
+The best is to add the RSS feed to your favorite blog aggregator, because I often forget to post on Twitter.
 
 Enjoy!
