@@ -51,8 +51,11 @@ kramdown:
 excerpt_separator: <!--more-->
 
 # default image for twitter cards
+# and facebook open-graph
 defaults:
   - scope:
       path: ""
     values:
       image: /assets/imgs/learningjulia.svg
+      height: 100
+      width: 100
