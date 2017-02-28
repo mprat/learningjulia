@@ -10,6 +10,6 @@ I am a computer vision research scientist. I use [Python](http://python.org) and
 
 [Friends](http://blog.robindeits.com/) have been encouraging me to learn Julia to fix some of my biggest woes with Python and numpy and beyond. To avoid procrastinating on learning Julia, I decided to make this blog to document and share my experience. It will provide motivation for me to learn and hack around with Julia, documenting my entire progress.
 
-If you have any ideas for projects for me to do, libraries for me to look at, or interesting content you want to see on this site, feel free to <a href="mailto:{{ site.author.email }}">send me an email</a>. I also do lots of things outside of computer vision, you can read more about me on [my personal blog](http://mprat.org).
+If you have any ideas for projects for me to do, libraries for me to look at, or interesting content you want to see on this site, feel free to <a href="mailto:{{ site.email }}">send me an email</a>. I also do lots of things outside of computer vision, you can read more about me on [my personal blog](http://mprat.org).
 
 Enjoy!

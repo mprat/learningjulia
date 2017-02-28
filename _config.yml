@@ -1,7 +1,6 @@
 title: Learning Julia
-author:
-  name: Michele Pratusevich
-  email: mail@learningjulia.com
+author: Michele Pratusevich
+email: mail@learningjulia.com
 description: > 
   A blog documenting my learning of the Julia programming
   language. My background is in computer vision and computational
@@ -9,11 +8,17 @@ description: >
   bent.
 baseurl: ""
 url: "http://learningjulia.com"
-twitter_username: learningjulia
-github_username:  mprat
+twitter:
+  username: learningjulia
+github:
+  username:  mprat
 google_analytics: UA-44633314-3
 disqus:
   shortname: learningjulia
+logo: /assets/imgs/learningjulia.svg
+social:
+  links:
+    - https://twitter.com/learningjulia
 
 # Build settings
 safe: true
@@ -27,6 +32,8 @@ gems:
   - jekyll-mentions
   - jekyll-paginate
   - jekyll-redirect-from
+  - jekyll-seo-tag
+  - jekyll-sitemap
 exclude:
   - Gemfile
   - Gemfile.lock
@@ -42,3 +49,10 @@ kramdown:
   hard_wrap: false
 
 excerpt_separator: <!--more-->
+
+# default image for twitter cards
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: /assets/imgs/learningjulia.svg
