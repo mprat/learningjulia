@@ -79,3 +79,31 @@ svg {
 	vertical-align: middle;
 	margin-bottom: 3px;
 }
+
+#share {
+    margin: 10px 0;
+    text-align: center;
+}
+
+#share > h2 {
+    font-size: 1.2em;
+}
+
+#share > ul {
+    list-style: none;
+    margin: 5px 0;
+}
+
+#share > ul > li {
+    display: inline;
+}
+
+#share > ul > li > a, #share > ul > li > a:hover {
+    text-decoration: none;
+}
+
+#share > ul > li > a > svg {
+    width: 50px;
+    height: 50px;
+    fill: #333;
+}
