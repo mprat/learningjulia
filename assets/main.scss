@@ -107,3 +107,18 @@ svg {
     height: 50px;
     fill: #333;
 }
+
+.next-page-links {
+	min-height: 10px;
+	overflow: hidden;
+}
+
+.prev-link {
+	float: left;
+	margin-bottom: 10px;
+}
+
+.next-link {
+	float: right;
+	margin-bottom: 10px;
+}

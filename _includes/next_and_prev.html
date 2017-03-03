@@ -1,0 +1,9 @@
+<div class="next-page-links">
+{% if page.previous.url %}
+	<a class="prev-link" href="{{page.previous.url}}">&laquo; Previous post</a>
+{% endif %}
+
+{% if page.next.url %}
+	<a class="next-link" href="{{page.next.url}}">Next post &raquo;</a>
+{% endif %}
+</div>
