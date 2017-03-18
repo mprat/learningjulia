@@ -108,9 +108,9 @@ unknown type  {{ cell.type }}
 {% block data_svg scoped -%}
 <div class="output_svg output_subarea {{ extra_class }}">
 {%- if output.svg_filename %}
-<img src="{{ output.svg_filename | posix_path }}"
+<img src="{{ output.svg_filename | jekyllimgurl }}"
 {%- else %}
-{{ output.data['image/svg+xml'] }}
+{{ output.data['image/svg+xml'] | svg_filter }}
 {%- endif %}
 </div>
 {%- endblock data_svg %}
@@ -130,7 +130,7 @@ unknown type  {{ cell.type }}
 {% block data_png scoped %}
 <div class="output_png output_subarea {{ extra_class }}">
 {%- if 'image/png' in output.metadata.get('filenames', {}) %}
-<img src="{{ output.metadata.filenames['image/png'] | posix_path }}"
+<img src="{{ output.metadata.filenames['image/png'] | jekyllimgurl }}"
 {%- else %}
 <img src="data:image/png;base64,{{ output.data['image/png'] }}"
 {%- endif %}
@@ -152,7 +152,7 @@ class="unconfined"
 {% block data_jpg scoped %}
 <div class="output_jpeg output_subarea {{ extra_class }}">
 {%- if 'image/jpeg' in output.metadata.get('filenames', {}) %}
-<img src="{{ output.metadata.filenames['image/jpeg'] | posix_path }}"
+<img src="{{ output.metadata.filenames['image/jpeg'] | jekyllimgurl }}"
 {%- else %}
 <img src="data:image/jpeg;base64,{{ output.data['image/jpeg'] }}"
 {%- endif %}
