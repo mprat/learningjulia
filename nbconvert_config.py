@@ -26,7 +26,7 @@ c.HTMLExporter.preprocessors = [
 	'nbconvert.preprocessors.ExecutePreprocessor',
 	'nbconvert.preprocessors.coalesce_streams',
 	'nbconvert.preprocessors.ExtractOutputPreprocessor']
-c.HTMLExporter.template_file = 'notebooks/basic.tpl'
+c.HTMLExporter.template_file = 'notebooks/jekyll.tpl'
 c.HTMLExporter.filters = {"jekyllimgurl": jekyllurl, "svg_filter": svg_filter}
 
 c.ExecutePreprocessor.allow_errors = True
