@@ -1,0 +1,1522 @@
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In this series I want to accomplish a simple task: stitch two images together. This is a pretty standard task in computer vision and image processing, and it has a lot of elements with lots of small details - iterating through images, comparing pixel values, interpolation, matrix operations, and more.</p>
+<p>When I first started this task I thought it would be a piece of cake, but I'd forgotten how many steps and details there are, so I'm going to split this task across two posts. To break it down, here are the steps required:</p>
+<ol>
+<li>Extract feature points (<em>Part 1</em>)</li>
+<li>Calculate descriptors (<em>Part 1</em>)</li>
+<li>Match points (<em>Part 1</em>)</li>
+<li>Calculate transformation (<em>Part 2</em>)</li>
+<li>Stitch images (<em>Part 2</em>)</li>
+</ol>
+<p>This notebook covers <em>Part 1</em>, everything from feature points to matching. In the next post I'll take a look at how to actually do the stitching.</p>
+<h1 id="Setting-up-and-loading-images">Setting up and loading images<a class="anchor-link" href="#Setting-up-and-loading-images">&#182;</a></h1><p>There is a package made by the JuliaImages community called <a href="https://github.com/JuliaImages/ImageFeatures.jl">ImageFeatures.jl</a> that implements lots of feature extraction methods. It isn't committed to the Julia METADATA.jl packages directory, but the awesome thing is that you can still clone the package locally by doing:</p>
+
+<pre><code>Pkg.clone("https://github.com/JuliaImages/ImageFeatures.jl");
+
+</code></pre>
+<p>Or, when you have it installed and want to udpate:</p>
+
+<pre><code>Pkg.update("ImageFeatures");
+
+</code></pre>
+<p>Pretty cool that in Julia, packages can just be Github repositories!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">summary</span><span class="p">(</span><span class="n">img1</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[1]:</div>
+
+<div class="output_subarea output_text output_error">
+<pre>
+UndefVarError: img1 not defined
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">summary</span><span class="p">(</span><span class="n">img1</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[2]:</div>
+
+<div class="output_subarea output_text output_error">
+<pre>
+UndefVarError: img1 not defined
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">using</span> <span class="n">ImageFeatures</span><span class="p">,</span> <span class="n">Images</span><span class="p">,</span> <span class="n">FileIO</span><span class="p">;</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>As a set of sample images to use for the stitching exercise, I took two pictures of the <a href="https://en.wikipedia.org/wiki/Ray_and_Maria_Stata_Center">Stata Center</a> at MIT. It is home to CSAIL (the Computer Science and Artificial Intelligence Laboratory), where I and many others spend much of our MIT careers in. I really like using it as a case study for image stitching because as you can see, the building is pretty weird, leaving many opportunities for feature detection to go wrong!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">img1</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s">&quot;imgs/stata-1.png&quot;</span><span class="p">)</span>
+<span class="n">img2</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s">&quot;imgs/stata-2.png&quot;</span><span class="p">)</span>
+<span class="p">[</span><span class="n">img1</span> <span class="n">img2</span><span class="p">]</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[4]:</div>
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_5_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">size</span><span class="p">(</span><span class="n">img1</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[5]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(500,375)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Extracting-Feature-Points">Extracting Feature Points<a class="anchor-link" href="#Extracting-Feature-Points">&#182;</a></h1><p>The first step to stitching two images together is finding feature points, sometimes called <em>keypoints</em>. The main purpose of feature points are to identify points in an image that are "interesting", for some value of interesting. When we are doing image stitching, we generally think points are interesting if they correspond to "corners" in the image. Basically, points at which boundaries happen between objects. The idea is that if we can identify points at the corners of objects, they are unique enough to match nicely if they appear in another image. Of course, this does not happen in practice, but it works fairly well, as we shall see later on.</p>
+<p>One method to finding image corners is the <code>Harris corner</code> method, which uses the Sobel kernel (which I implemented and talked about in <a href="http://learningjulia.com/2017/03/09/imfilter-and-arrays.html">my last post</a>) to find areas in the image that have strong gradients.</p>
+<p>Thankfully, the <code>Images.jl</code> package we are familiar with implements <a href="https://github.com/JuliaImages/Images.jl/blob/f2b1ad762a18289f5f76fa1070debb460ed6e082/src/corner.jl"><code>imcorner</code></a>:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="o">?</span><span class="n">imcorner</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[6]:</div>
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>search: <span class="ansi-bold">i</span></pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This is the first time I've come across the Julia <code>method</code> type, so I assumed that I could just pass the function itself (in this case, the <code>harris</code> function):</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="c"># construct keypoints</span>
+<span class="n">features_1</span> <span class="o">=</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">harris</span><span class="p">);</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[7]:</div>
+
+<div class="output_subarea output_text output_error">
+<pre>
+MethodError: no method matching imcorner(::Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}, ::Images.#harris)
+Closest candidates are:
+  imcorner(::AbstractArray{T,N}, ::Any, <span class="ansi-red-intense-fg ansi-bold">::Any</span>; method, args...) at /home/mprat/.julia/v0.5/Images/src/corner.jl:27
+  imcorner(::AbstractArray{T,N}; method, args...) at /home/mprat/.julia/v0.5/Images/src/corner.jl:19
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>But as you can see, it throws an error. Just to confirm, <code>harris</code> is a real Julia function in the <code>Images</code> package:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="o">?</span><span class="n">harris</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[8]:</div>
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>search: <span class="ansi-bold">h</span><span class="ansi-bold">a</span><span class="ansi-bold">r</span><span class="ansi-bold">r</span><span class="ansi-bold">i</span><span class="ansi-bold">s</span> s<span class="ansi-bold">h</span><span class="ansi-bold">a</span><span class="ansi-bold">r</span>ep<span class="ansi-bold">r</span>opert<span class="ansi-bold">i</span>e<span class="ansi-bold">s</span> S<span class="ansi-bold">h</span><span class="ansi-bold">a</span><span class="ansi-bold">r</span>edMat<span class="ansi-bold">r</span><span class="ansi-bold">i</span>x
+
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[8]:</div>
+
+
+<div class="output_markdown rendered_html output_subarea output_execute_result">
+
+<pre><code>harris_response = harris(img; [k], [border], [weights])</code></pre>
+<p>Performs Harris corner detection. The covariances can be taken using either a mean weighted filter or a gamma kernel.</p>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>So what's the problem? The problem is that in the <code>imcorner</code> function, <code>method</code> is a keyword argument, not a positional argument. How do you know that? Well, the function signature says:</p>
+
+<pre><code>function imcorner(img::AbstractArray; method::Function = harris, args...)
+
+</code></pre>
+<p>In case you missed it, there is a <code>;</code> in between the <code>img</code> argument and the <code>method</code> argument. This means that the <code>img</code> argument is a positional argument, and everything after the <code>;</code> (starting from <code>method</code>), is a keyword argument. The difference is that for a keyword argument, you always have to specify what variable the argument maps to in the function signature, like this:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">features_1</span> <span class="o">=</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">);</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In this case, <code>method</code> is a keyword argument and we explicitly have to specify it when calling <code>imcorner</code>.</p>
+<p>Now our function calls work just fine! In Julia, positional arguments come before keyword arguments, and keyword arguments cannot be positional arguments. So once you define an argument after a semicolon, it must always be called with a keyword. You can read more about the differences between positional and keyword arguments <a href="http://docs.julialang.org/en/stable/manual/functions/">in the Julia docs</a>.</p>
+<h1 id="Visualize-keypoints">Visualize keypoints<a class="anchor-link" href="#Visualize-keypoints">&#182;</a></h1><p>Let's see what type gets returned by <code>imcorner</code> and see if we can visualize the features.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">summary</span><span class="p">(</span><span class="n">features_1</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[10]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>&#34;500×375 BitArray{2}&#34;</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">sizeof</span><span class="p">(</span><span class="n">features_1</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[11]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>23440</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>You can see that <code>features_1</code> is a <code>BitArray</code> - this means it is the same as a binary mask the size of our image. A "True" value at a given index means that pixel is a feature, "False" means it is not a feature. The cool thing about <code>BitArrays</code> is that they only store a single bit of information per entry, rather than say an array of booleans, which uses more bits. You can see that this <code>BitArray</code> only takes up 23440 bytes. (<em>aside: there are 8 bits in a byte, so $23440$ bytes $= 23440 \cdot 8 = 1875520$ bits $= 500 \cdot 375$ bits, one bit per entry in the <code>BitArray</code></em>)</p>
+<p>What I want to do is visualize the feature points by drawing a circle around the feature point. I'll do this by iterating over the <code>BitArray</code> and constructing a new one that stores the points that we will turn yellow.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_points</span><span class="p">(</span><span class="n">image</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">mask</span><span class="o">::</span><span class="kt">BitArray</span><span class="p">{</span><span class="mi">2</span><span class="p">};</span> <span class="n">c</span><span class="o">::</span><span class="n">Colorant</span><span class="o">=</span><span class="n">colorant</span><span class="s">&quot;yellow&quot;</span><span class="p">)</span>
+    <span class="n">new_image</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">image</span><span class="p">);</span>
+    <span class="n">new_image</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">new_image</span><span class="p">;</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[12]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>draw_points (generic function with 1 method)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">features_1</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[13]:</div>
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_20_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This function works to draw our points, but it is not very generic. The <code>BitArray</code> size is encoded directly. We don't actually care of the <code>BitArray</code> has exactly 2 channels, all we want to know is that it is the same size as the image.</p>
+<p>The way we do this is by defining <code>draw_points</code> parametrized by two values <code>T</code> and <code>N</code>. As far as I can tell by reading Julia package code, by convension <code>T</code> is used to represent "Type" and <code>N</code> is used to represent dimension. What this function header says is that for an image of type <code>T</code> with size <code>N</code>, make sure the <code>BitArray</code> mask has the same size. We do this to make sure the calling of the image on the mask doesn't yield an out of bound error.</p>
+<p>You'll notice that I also include a color argument as a <code>colorant</code> from the <a href="https://github.com/JuliaGraphics/Colors.jl">Colors.jl</a> package. Because I specify a default value for this argument, I don't have to call <code>draw_points</code> by passing a color every time. If I don't, it will just use yellow.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_points</span><span class="p">{</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">}(</span><span class="n">image</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">{</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">},</span> <span class="n">mask</span><span class="o">::</span><span class="kt">BitArray</span><span class="p">{</span><span class="n">N</span><span class="p">},</span> <span class="n">c</span><span class="o">::</span><span class="n">Colorant</span><span class="o">=</span><span class="n">colorant</span><span class="s">&quot;yellow&quot;</span><span class="p">)</span>
+    <span class="n">new_image</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">image</span><span class="p">);</span>
+    <span class="n">new_image</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">new_image</span><span class="p">;</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[14]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>draw_points (generic function with 3 methods)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">features_1</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[15]:</div>
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_23_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now let's see if we can use <code>Interact.jl</code> again to visualize the 3 different kinds of corner detectors implemented in <code>ImageFeatures</code>.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">using</span> <span class="n">Interact</span><span class="p">;</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[16]:</div>
+
+
+<div class="output_html rendered_html output_subarea ">
+<div id="interact-js-shim">
+    <script charset="utf-8">
+(function (IPython, $, _, MathJax) {
+    $.event.special.destroyed = {
+	remove: function(o) {
+	    if (o.handler) {
+		o.handler.apply(this, arguments)
+	    }
+	}
+    }
+
+    var OutputArea = IPython.version >= "4.0.0" ? require("notebook/js/outputarea").OutputArea : IPython.OutputArea;
+
+    var redrawValue = function (container, type, val) {
+	var selector = $("<div/>");
+	var oa = new OutputArea(_.extend(selector, {
+	    selector: selector,
+	    prompt_area: true,
+	    events: IPython.events,
+	    keyboard_manager: IPython.keyboard_manager
+	})); // Hack to work with IPython 2.1.0
+
+	switch (type) {
+	case "image/png":
+            var _src = 'data:' + type + ';base64,' + val;
+	    $(container).find("img").attr('src', _src);
+	    break;
+	case "text/latex":
+		if (MathJax){
+			var math = MathJax.Hub.getAllJax(container)[0];
+			MathJax.Hub.Queue(["Text", math, val.replace(/^\${1,2}|\${1,2}$/g, '')]);
+			break;
+		}
+	default:
+	    var toinsert = OutputArea.append_map[type].apply(
+		oa, [val, {}, selector]
+	    );
+	    $(container).empty().append(toinsert.contents());
+	    selector.remove();
+	}
+    }
+
+
+    $(document).ready(function() {
+	function initComm(evt, data) {
+	    var comm_manager = data.kernel.comm_manager;
+        //_.extend(comm_manager.targets, require("widgets/js/widget"))
+	    comm_manager.register_target("Signal", function (comm) {
+            comm.on_msg(function (msg) {
+                var val = msg.content.data.value;
+                $(".signal-" + comm.comm_id).each(function() {
+                var type = $(this).data("type");
+                if (typeof(val[type]) !== "undefined" && val[type] !== null) {
+                    redrawValue(this, type, val[type], type);
+                }
+                });
+                delete val;
+                delete msg.content.data.value;
+            });
+	    });
+
+	    // coordingate with Comm and redraw Signals
+	    // XXX: Test using Reactive here to improve performance
+	    $([IPython.events]).on(
+		'output_appended.OutputArea', function (event, type, value, md, toinsert) {
+		    if (md && md.reactive) {
+                // console.log(md.comm_id);
+                toinsert.addClass("signal-" + md.comm_id);
+                toinsert.data("type", type);
+                // Signal back indicating the mimetype required
+                var comm_manager = IPython.notebook.kernel.comm_manager;
+                var comm = comm_manager.comms[md.comm_id];
+                comm.then(function (c) {
+                    c.send({action: "subscribe_mime",
+                       mime: type});
+                    toinsert.bind("destroyed", function() {
+                        c.send({action: "unsubscribe_mime",
+                               mime: type});
+                    });
+                })
+		    }
+	    });
+	}
+
+	try {
+	    // try to initialize right away. otherwise, wait on the status_started event.
+	    initComm(undefined, IPython.notebook);
+	} catch (e) {
+	    $([IPython.events]).on('kernel_created.Kernel kernel_created.Session', initComm);
+	}
+    });
+})(IPython, jQuery, _, MathJax);
+</script>
+    <script>
+        window.interactLoadedFlag = true
+       $("#interact-js-shim").bind("destroyed", function () {
+           if (window.interactLoadedFlag) {
+               console.warn("JavaScript required by Interact will be removed if you remove this cell or run using Interact more than once.")
+           }
+       })
+       $([IPython.events]).on("kernel_starting.Kernel kernel_restarting.Kernel", function () { window.interactLoadedFlag = false })
+   </script>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="nd">@manipulate</span> <span class="k">for</span> <span class="n">m</span><span class="o">=</span><span class="p">[</span><span class="n">harris</span><span class="p">,</span> <span class="n">shi_tomasi</span><span class="p">,</span> <span class="n">kitchen_rosenfeld</span><span class="p">]</span>
+    <span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">m</span><span class="p">))</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[17]:</div>
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>As we can see, the differences are pretty minimal, so let's pick Harris corners to use as our keypoint locator and keep exploring parameters. We can see from <code>ImageFeatures</code> that the other way to call <code>imcorner</code> is to specify a percentile and a threshold.</p>
+<p>If you specify <code>imcorner</code> WITHOUT these parameters, the function will compute a "local maximum response" of all neighbors, and only return points that have the maximum value of all of its neighbors. If you call <code>imcorner</code> with a percentile, the function does not do mean response and instead returns all the points above the percentile you specified. (Yet another way is to pass a threshold and "false", which just does thresholding without taking percentiles into account, but this is hard to calibrate across methods).</p>
+<p>Choosing the local maximum response or the percentile method is one of choice. Usually, local maximum response means you don't have too many feature points that are very close together. This is great for downstream parts of your pipeline, since there are likely to be fewer feature points that look very much alike.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">features_1</span> <span class="o">=</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">);</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">summary</span><span class="p">(</span><span class="n">features_1</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[19]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>&#34;500×375 Array{Bool,2}&#34;</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[20]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">sizeof</span><span class="p">(</span><span class="n">features_1</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[20]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>187500</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>One weird quirk of this method is that if you use <code>imcorner</code> and pass arguments, you don't get back a <code>BitArray</code>, but instead an <code>Array</code> of <code>Bool</code> values. Compared to the $23440$ bytes from the <code>BitArray</code> above, this takes $187500 = 500 \cdot 375$ bytes, which is $187500 * 8 = 1500000$ bits, or 8 times more bits.</p>
+<p>However, this also means that our implementation for <code>draw_points</code> won't work. We specifically specified that the <code>mask</code> argument had to be a <code>BitArray</code>.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[21]:</div>
+
+<div class="output_subarea output_text output_error">
+<pre>
+MethodError: no method matching draw_points(::Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}, ::Array{Bool,2})
+Closest candidates are:
+  draw_points(::AbstractArray{T,N}, <span class="ansi-red-intense-fg ansi-bold">::BitArray{2}</span>; c) at In[12]:2
+  draw_points{T,N}(::AbstractArray{T,N}, <span class="ansi-red-intense-fg ansi-bold">::BitArray{N}</span>) at In[14]:2
+  draw_points{T,N}(::AbstractArray{T,N}, <span class="ansi-red-intense-fg ansi-bold">::BitArray{N}</span>, <span class="ansi-red-intense-fg ansi-bold">::ColorTypes.Colorant{T,N}</span>) at In[14]:2
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>What we can do is generalize our function a little bit more. Rather than forcing <code>mask</code> to be a <code>BitArray</code>, we can say that it has to be a type of <code>AbstractArray{Bool, N}</code>, the parent type of both <code>BitArray</code> and <code>Array{Bool}</code>. (Thanks <a href="http://stackoverflow.com/questions/29623059/whats-the-difference-between-arraybool-and-bitarray-in-julia-and-how-are-they">StackOverflow post</a>).</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[22]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="kt">BitArray</span> <span class="o">&lt;:</span> <span class="kt">AbstractArray</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[22]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>true</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[23]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="kt">Array</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">AbstractArray</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[23]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>true</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[24]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_points</span><span class="p">{</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">}(</span><span class="n">image</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">{</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">},</span> <span class="n">mask</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">{</span><span class="kt">Bool</span><span class="p">,</span> <span class="n">N</span><span class="p">},</span> <span class="n">c</span><span class="o">::</span><span class="n">Colorant</span><span class="o">=</span><span class="n">colorant</span><span class="s">&quot;yellow&quot;</span><span class="p">)</span>
+    <span class="n">new_image</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">image</span><span class="p">);</span>
+    <span class="n">new_image</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">new_image</span><span class="p">;</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[24]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>draw_points (generic function with 5 methods)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And now we can draw again!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[25]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[25]:</div>
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_38_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's see how the percentile affects the Harris corners (I really love Interact!!)</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[26]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="nd">@manipulate</span> <span class="k">for</span> <span class="n">percentile</span><span class="o">=</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+    <span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">percentile</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">))</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[26]:</div>
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>From the outputs, I think we can safely say that the local-max response is the best option for finding feature points of those built into <code>Images.jl</code> - the points are not densely clustered, and we can match them more easily.</p>
+<p>Of course, we can combine the two methods, just for kicks:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[27]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">corners_percentile_and_local_maximum</span><span class="p">(</span><span class="n">img</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">percentile</span><span class="p">)</span>
+    <span class="n">percentile_corners</span> <span class="o">=</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">percentile</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">)</span>
+    <span class="n">corners</span> <span class="o">=</span> <span class="n">falses</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">percentile_corners</span><span class="p">))</span>
+    <span class="n">maxima</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="kt">CartesianIndex</span><span class="p">{</span><span class="mi">2</span><span class="p">},</span> <span class="n">findlocalmaxima</span><span class="p">(</span><span class="n">percentile_corners</span><span class="p">))</span>
+    <span class="n">corners</span><span class="p">[</span><span class="n">maxima</span><span class="p">]</span> <span class="o">=</span> <span class="kc">true</span>
+    <span class="k">return</span> <span class="n">corners</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[27]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>corners_percentile_and_local_maximum (generic function with 1 method)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[28]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="nd">@manipulate</span> <span class="k">for</span> <span class="n">percentile</span><span class="o">=</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+    <span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">corners_percentile_and_local_maximum</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">percentile</span><span class="p">),</span> <span class="n">c</span><span class="o">=</span><span class="n">colorant</span><span class="s">&quot;red&quot;</span><span class="p">)</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[28]:</div>
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[28]:</div>
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_43_1.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>As you can see, the resulting corners are very sparse (perhaps too sparse for our needs), so we're just going to stick to the plain old Harris corner detector without playing with percentiles.</p>
+<h1 id="Calculate-descriptors">Calculate descriptors<a class="anchor-link" href="#Calculate-descriptors">&#182;</a></h1><p>Now that we have points on the image that we think are interesting, we want to compute a description of each point that will hopefully help us when trying to find similar points in another image. The purpose of a feature descriptor is to store information about the "orientations" of edges and their magnitudes. The idea is that edges have directionality - a horizontal edge that is darker on the top half is different than a horizontal edge that is darker on the bottom half. So if you are eventually looking to match edges (or corners) from two images together, you need to somehow encode the directionality of these edges in what we call feature descriptors.</p>
+<p>There are many options for feature descriptors. You might have heard of SIFT feature points - those work well, except for two problems: (1) the SIFT algorithm is patented, so you can't use it without paying license fees, and (2) SIFT generates a 128-dimensional vector for all the feature points. The good news is that feature descriptors like BRISK, BRIEF, and ORB were created that have similar properties to SIFT while being free and open, and they use fewer bits of information!</p>
+<p>The <code>ImageFeatures</code> package provides convenient wrappers around keypoints and features, since this is a pretty common operation in image processing. Of course, this means I'll have to make a new <code>draw_points()</code> method to see my keypoints. But no biggie, it's the same code. <code>Keypoints</code> can be constructed from a <code>BitArray</code> or an <code>Array{Bool}</code>, so we are in the clear.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[29]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_points</span><span class="p">(</span><span class="n">image</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">mask</span><span class="o">::</span><span class="n">Keypoints</span><span class="p">;</span> <span class="n">c</span><span class="o">::</span><span class="n">Colorant</span><span class="o">=</span><span class="n">colorant</span><span class="s">&quot;yellow&quot;</span><span class="p">)</span>
+    <span class="n">new_image</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">image</span><span class="p">);</span>
+    <span class="n">new_image</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">new_image</span><span class="p">;</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[29]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>draw_points (generic function with 6 methods)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[30]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">Keypoints</span><span class="p">(</span><span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">)))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[30]:</div>
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_46_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The thing to note is that usually the feature descriptors are calculated a the grayscale version of an image. As it turns out, the information stored in Red, Green, and Blue channels are redundant (<em>self-aside: maybe I'll do an exploratory post on that at some future date</em>), so you really only need to use a single channel that describes all of them to calculate descriptors. Let's say we want to calculate BRISK features on our image. It computes a vector of binary features (i.e. 0s and 1s) that determine whether a particular orientation is present for that keypoint. There's a pretty good graphic on the <code>ImageFeatures.jl</code> docs page about how to visualize the regions used by BRISK features - you can <a href="http://juliaimages.github.io/ImageFeatures.jl/latest/tutorials/brisk/">find it here</a>.</p>
+<p><code>ImageFeatures</code> provides an interface for creating a descriptor, but first we need to convert our keypoints to the <code>Feature</code> type so we can store the orientations for each feature point.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[31]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="o">?</span><span class="n">Features</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[31]:</div>
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>search: <span class="ansi-bold">F</span><span class="ansi-bold">e</span><span class="ansi-bold">a</span><span class="ansi-bold">t</span><span class="ansi-bold">u</span><span class="ansi-bold">r</span><span class="ansi-bold">e</span><span class="ansi-bold">s</span> Image<span class="ansi-bold">F</span><span class="ansi-bold">e</span><span class="ansi-bold">a</span><span class="ansi-bold">t</span><span class="ansi-bold">u</span><span class="ansi-bold">r</span><span class="ansi-bold">e</span><span class="ansi-bold">s</span> <span class="ansi-bold">f</span><span class="ansi-bold">e</span><span class="ansi-bold">a</span><span class="ansi-bold">t</span><span class="ansi-bold">u</span><span class="ansi-bold">r</span><span class="ansi-bold">e</span>_tran<span class="ansi-bold">s</span>form <span class="ansi-bold">F</span><span class="ansi-bold">e</span><span class="ansi-bold">a</span><span class="ansi-bold">t</span><span class="ansi-bold">u</span><span class="ansi-bold">r</span><span class="ansi-bold">e</span>
+
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[31]:</div>
+
+
+<div class="output_markdown rendered_html output_subarea output_execute_result">
+
+<pre><code>features = Features(boolean_img)
+features = Features(keypoints)</code></pre>
+<p>Returns a <code>Vector{Feature}</code> of features generated from the <code>true</code> values in a boolean image or from a  list of keypoints.</p>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[32]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">brisk_params</span> <span class="o">=</span> <span class="n">BRISK</span><span class="p">();</span>
+<span class="n">features_1</span> <span class="o">=</span> <span class="n">Features</span><span class="p">(</span><span class="n">Keypoints</span><span class="p">(</span><span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">)));</span>
+<span class="n">desc_1</span><span class="p">,</span> <span class="n">ret_features_1</span> <span class="o">=</span> <span class="n">create_descriptor</span><span class="p">(</span><span class="n">Gray</span><span class="o">.</span><span class="p">(</span><span class="n">img1</span><span class="p">),</span> <span class="n">features_1</span><span class="p">,</span> <span class="n">brisk_params</span><span class="p">);</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>If we calculate the descriptors for both images, we can use the <code>match_keypoints</code> function to match both images. What it does (as implemented in <code>ImageFeatures</code>), is match feature points computed on two images using a Hamming Distance function, since BRISK features output a set of binary vectors for each keypoint. The <code>Hamming Distance</code> is basically "how many bits different" are two vectors. So the vectors <code>[1, 1, 1]</code> and <code>[0, 0, 0]</code> have a Hamming Distance of 3, while the vectors <code>[1, 1, 1]</code> and <code>[1, 1, 0]</code> have a Hamming Distance of 1.</p>
+<p>I'm going to make a wrapper <code>get_descriptors</code> function so I don't need to remember all the arguments to pass.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[33]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">get_descriptors</span><span class="p">(</span><span class="n">img</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">)</span>
+    <span class="n">brisk_params</span> <span class="o">=</span> <span class="n">BRISK</span><span class="p">();</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="n">Features</span><span class="p">(</span><span class="n">Keypoints</span><span class="p">(</span><span class="n">imcorner</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">)));</span>
+    <span class="n">desc</span><span class="p">,</span> <span class="n">ret_features</span> <span class="o">=</span> <span class="n">create_descriptor</span><span class="p">(</span><span class="n">Gray</span><span class="o">.</span><span class="p">(</span><span class="n">img</span><span class="p">),</span> <span class="n">features</span><span class="p">,</span> <span class="n">brisk_params</span><span class="p">);</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">match_points</span><span class="p">(</span><span class="n">img1</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">img2</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">threshold</span><span class="o">::</span><span class="kt">Float64</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">desc_1</span><span class="p">,</span> <span class="n">ret_features_1</span> <span class="o">=</span> <span class="n">get_descriptors</span><span class="p">(</span><span class="n">img1</span><span class="p">);</span>
+    <span class="n">desc_2</span><span class="p">,</span> <span class="n">ret_features_2</span> <span class="o">=</span> <span class="n">get_descriptors</span><span class="p">(</span><span class="n">img2</span><span class="p">);</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="n">match_keypoints</span><span class="p">(</span><span class="n">Keypoints</span><span class="p">(</span><span class="n">ret_features_1</span><span class="p">),</span> <span class="n">Keypoints</span><span class="p">(</span><span class="n">ret_features_2</span><span class="p">),</span> <span class="n">desc_1</span><span class="p">,</span> <span class="n">desc_2</span><span class="p">,</span> <span class="n">threshold</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">matches</span><span class="p">;</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[33]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>match_points (generic function with 2 methods)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We can then use these matches to draw a line between the matched points from the two images. I'll need to install <a href="https://github.com/JuliaImages/ImageDraw.jl">ImageDraw</a> to make that work, because it implements a <a href="https://github.com/JuliaImages/ImageDraw.jl/blob/master/src/line2d.jl#L3"><code>line</code></a> function to draw a line between two points on an image. It is not an official package yet, so we just clone it from Github the same way we did with <code>ImageFeatures</code>.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[34]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="c"># Pkg.clone(&quot;https://github.com/JuliaImages/ImageDraw.jl&quot;);</span>
+<span class="k">using</span> <span class="n">ImageDraw</span><span class="p">;</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[35]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">matches</span> <span class="o">=</span> <span class="n">match_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">);</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[36]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_matches</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="n">matches</span><span class="p">)</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="p">[</span><span class="n">img1</span> <span class="n">img2</span><span class="p">];</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="kt">CartesianIndex</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mi">2</span><span class="p">));</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="kp">in</span> <span class="n">matches</span>
+        <span class="n">line!</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">offset</span><span class="p">)</span>
+    <span class="k">end</span>
+    <span class="n">grid</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[36]:</div>
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>draw_matches (generic function with 1 method)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[37]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">draw_matches</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="n">matches</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[37]:</div>
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_56_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>You can see that we get some pretty decent results! The sky is problematic, but skies are always going to be problematic, so I'm not too worried. We can probably get rid of that at the filtering and stitching stage in the next post.</p>
+<p>However, to do the actual stitching we'll have to use the matched points to compute a transformation from one image to another (known as a homography), while rejecting the bad matches. Then we'll have to actually do the image stitching portions and correct any errors there.</p>
+<p>Join me next time when I explore homographies, image transformations, and stitching. I found <a href="https://github.com/peterkovesi/ImageProjectiveGeometry.jl">this package</a> about projective geometry, so maybe I'll take a look at that one!</p>
+
+</div>
+</div>
+</div>
+ 
+

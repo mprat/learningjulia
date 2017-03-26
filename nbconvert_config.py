@@ -29,6 +29,10 @@ c.HTMLExporter.preprocessors = [
 c.HTMLExporter.template_file = 'notebooks/jekyll.tpl'
 c.HTMLExporter.filters = {"jekyllimgurl": jekyllurl, "svg_filter": svg_filter}
 
+# if there's an error in one of the cells let the execution keep going
 c.ExecutePreprocessor.allow_errors = True
+# disable the timeout
+c.ExecutePreprocessor.timeout = -1
 
+# write the final HTML files into the _include/notebooks directory
 c.FilesWriter.build_directory = "_includes/notebooks/"
