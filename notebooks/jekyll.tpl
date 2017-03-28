@@ -36,11 +36,14 @@ In&nbsp;[&nbsp;]:
 </div>
 {%- endblock empty_in_prompt %}
 
-{# 
-  output_prompt doesn't do anything in HTML,
-  because there is a prompt div in each output area (see output block)
-#}
 {% block output_prompt %}
+<div class="prompt output_prompt">
+{%- if cell.execution_count is defined -%}
+    Out[{{ cell.execution_count|replace(None, "&nbsp;") }}]:
+{%- else -%}
+    Out[&nbsp;]:
+{%- endif -%}
+</div>
 {% endblock output_prompt %}
 
 {% block input %}
@@ -54,13 +57,6 @@ In&nbsp;[&nbsp;]:
 {% block output %}
 <div class="output_area">
 {% block output_area_prompt %}
-<div class="prompt output_prompt">
-{%- if cell.execution_count is defined -%}
-    Out[{{ cell.execution_count|replace(None, "&nbsp;") }}]:
-{%- else -%}
-    Out[&nbsp;]:
-{%- endif -%}
-</div>
 {% endblock output_area_prompt %}
 {{ super() }}
 </div>

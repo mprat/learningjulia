@@ -52,7 +52,24 @@ $on-laptop:        800px;
 	color: rgba(0, 63, 255, 0.92);
 }
 
-.output_text > pre {
+.output_text {
+	background-color: $grey-color-light;
+	border-radius: 3px;
+	padding: 8px 12px;
+	overflow-x: auto;
+	margin-bottom: 15px;
+}
+
+.output_markdown, .output_markdown > pre, .output_markdown > pre > code {
+	font-size: $small-font-size;
+	font-style: italic;
+}
+
+.widget-subarea {
+	margin-bottom: 15px;
+}
+
+.output_text > pre, .output_execute_result > pre, .output_execute_result > pre > code {
 	background-color: $background-color;
 }
 

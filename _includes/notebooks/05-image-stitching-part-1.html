@@ -34,68 +34,6 @@
 <div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-julia"><pre><span></span><span class="n">summary</span><span class="p">(</span><span class="n">img1</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[1]:</div>
-
-<div class="output_subarea output_text output_error">
-<pre>
-UndefVarError: img1 not defined
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-julia"><pre><span></span><span class="n">summary</span><span class="p">(</span><span class="n">img1</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[2]:</div>
-
-<div class="output_subarea output_text output_error">
-<pre>
-UndefVarError: img1 not defined
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
-<div class="inner_cell">
-    <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">using</span> <span class="n">ImageFeatures</span><span class="p">,</span> <span class="n">Images</span><span class="p">,</span> <span class="n">FileIO</span><span class="p">;</span>
 </pre></div>
 
@@ -116,7 +54,7 @@ UndefVarError: img1 not defined
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">img1</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s">&quot;imgs/stata-1.png&quot;</span><span class="p">)</span>
@@ -131,15 +69,15 @@ UndefVarError: img1 not defined
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[2]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[4]:</div>
 
 
 
 <div class="output_png output_subarea output_execute_result">
-<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_5_0.png"
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_3_0.png"
 >
 </div>
 
@@ -151,7 +89,7 @@ UndefVarError: img1 not defined
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">size</span><span class="p">(</span><span class="n">img1</span><span class="p">)</span>
@@ -164,10 +102,10 @@ UndefVarError: img1 not defined
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[3]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[5]:</div>
 
 
 
@@ -195,7 +133,7 @@ UndefVarError: img1 not defined
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="o">?</span><span class="n">imcorner</span>
@@ -208,14 +146,35 @@ UndefVarError: img1 not defined
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[4]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[6]:</div>
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>search: <span class="ansi-bold">i</span></pre>
+<pre>search: <span class="ansi-bold">i</span><span class="ansi-bold">m</span><span class="ansi-bold">c</span><span class="ansi-bold">o</span><span class="ansi-bold">r</span><span class="ansi-bold">n</span><span class="ansi-bold">e</span><span class="ansi-bold">r</span>
+
+</pre>
 </div>
+</div>
+
+<div class="output_area">
+
+
+
+<div class="output_markdown rendered_html output_subarea output_execute_result">
+
+<pre><code>corners = imcorner(img; [method])
+corners = imcorner(img, threshold, percentile; [method])</code></pre>
+<p>Performs corner detection using one of the following methods -</p>
+
+<pre><code>1. harris
+2. shi_tomasi
+3. kitchen_rosenfeld</code></pre>
+<p>The parameters of the individual methods are described in their documentation. The maxima values of the resultant responses are taken as corners. If a threshold is specified, the values of the responses are thresholded to give the corner pixels. The threshold is assumed to be a percentile value unless <code>percentile</code> is set to false.</p>
+
+</div>
+
 </div>
 
 </div>
@@ -234,7 +193,7 @@ UndefVarError: img1 not defined
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="c"># construct keypoints</span>
@@ -248,10 +207,10 @@ UndefVarError: img1 not defined
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[5]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[7]:</div>
 
 <div class="output_subarea output_text output_error">
 <pre>
@@ -279,7 +238,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="o">?</span><span class="n">harris</span>
@@ -292,10 +251,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[6]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[8]:</div>
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>search: <span class="ansi-bold">h</span><span class="ansi-bold">a</span><span class="ansi-bold">r</span><span class="ansi-bold">r</span><span class="ansi-bold">i</span><span class="ansi-bold">s</span> s<span class="ansi-bold">h</span><span class="ansi-bold">a</span><span class="ansi-bold">r</span>ep<span class="ansi-bold">r</span>opert<span class="ansi-bold">i</span>e<span class="ansi-bold">s</span> S<span class="ansi-bold">h</span><span class="ansi-bold">a</span><span class="ansi-bold">r</span>edMat<span class="ansi-bold">r</span><span class="ansi-bold">i</span>x
@@ -306,7 +265,6 @@ Closest candidates are:
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[8]:</div>
 
 
 <div class="output_markdown rendered_html output_subarea output_execute_result">
@@ -339,7 +297,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">features_1</span> <span class="o">=</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">);</span>
@@ -357,14 +315,14 @@ Closest candidates are:
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>In this case, <code>method</code> is a keyword argument and we explicitly have to specify it when calling <code>imcorner</code>.</p>
 <p>Now our function calls work just fine! In Julia, positional arguments come before keyword arguments, and keyword arguments cannot be positional arguments. So once you define an argument after a semicolon, it must always be called with a keyword. You can read more about the differences between positional and keyword arguments <a href="http://docs.julialang.org/en/stable/manual/functions/">in the Julia docs</a>.</p>
-<h1 id="Visualize-keypoints">Visualize keypoints<a class="anchor-link" href="#Visualize-keypoints">&#182;</a></h1><p>Let's see what type gets returned by <code>imcorner</code> and see if we can visualize the features.</p>
+<h1 id="Visualizing-keypoints">Visualizing keypoints<a class="anchor-link" href="#Visualizing-keypoints">&#182;</a></h1><p>Let's see what type gets returned by <code>imcorner</code> and see if we can visualize the features.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">summary</span><span class="p">(</span><span class="n">features_1</span><span class="p">)</span>
@@ -377,10 +335,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[8]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[10]:</div>
 
 
 
@@ -396,7 +354,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">sizeof</span><span class="p">(</span><span class="n">features_1</span><span class="p">)</span>
@@ -409,10 +367,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[9]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[11]:</div>
 
 
 
@@ -439,7 +397,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_points</span><span class="p">(</span><span class="n">image</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">mask</span><span class="o">::</span><span class="kt">BitArray</span><span class="p">{</span><span class="mi">2</span><span class="p">};</span> <span class="n">c</span><span class="o">::</span><span class="n">Colorant</span><span class="o">=</span><span class="n">colorant</span><span class="s">&quot;yellow&quot;</span><span class="p">)</span>
@@ -456,10 +414,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[10]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[12]:</div>
 
 
 
@@ -475,7 +433,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">features_1</span><span class="p">)</span>
@@ -488,15 +446,15 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[11]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[13]:</div>
 
 
 
 <div class="output_png output_subarea output_execute_result">
-<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_20_0.png"
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_18_0.png"
 >
 </div>
 
@@ -520,7 +478,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_points</span><span class="p">{</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">}(</span><span class="n">image</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">{</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">},</span> <span class="n">mask</span><span class="o">::</span><span class="kt">BitArray</span><span class="p">{</span><span class="n">N</span><span class="p">},</span> <span class="n">c</span><span class="o">::</span><span class="n">Colorant</span><span class="o">=</span><span class="n">colorant</span><span class="s">&quot;yellow&quot;</span><span class="p">)</span>
@@ -537,10 +495,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[12]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[14]:</div>
 
 
 
@@ -556,7 +514,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">features_1</span><span class="p">)</span>
@@ -569,15 +527,15 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[13]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[15]:</div>
 
 
 
 <div class="output_png output_subarea output_execute_result">
-<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_23_0.png"
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_21_0.png"
 >
 </div>
 
@@ -599,7 +557,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">using</span> <span class="n">Interact</span><span class="p">;</span>
@@ -609,130 +567,10 @@ Closest candidates are:
 </div>
 </div>
 
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[16]:</div>
-
-
-<div class="output_html rendered_html output_subarea ">
-<div id="interact-js-shim">
-    <script charset="utf-8">
-(function (IPython, $, _, MathJax) {
-    $.event.special.destroyed = {
-	remove: function(o) {
-	    if (o.handler) {
-		o.handler.apply(this, arguments)
-	    }
-	}
-    }
-
-    var OutputArea = IPython.version >= "4.0.0" ? require("notebook/js/outputarea").OutputArea : IPython.OutputArea;
-
-    var redrawValue = function (container, type, val) {
-	var selector = $("<div/>");
-	var oa = new OutputArea(_.extend(selector, {
-	    selector: selector,
-	    prompt_area: true,
-	    events: IPython.events,
-	    keyboard_manager: IPython.keyboard_manager
-	})); // Hack to work with IPython 2.1.0
-
-	switch (type) {
-	case "image/png":
-            var _src = 'data:' + type + ';base64,' + val;
-	    $(container).find("img").attr('src', _src);
-	    break;
-	case "text/latex":
-		if (MathJax){
-			var math = MathJax.Hub.getAllJax(container)[0];
-			MathJax.Hub.Queue(["Text", math, val.replace(/^\${1,2}|\${1,2}$/g, '')]);
-			break;
-		}
-	default:
-	    var toinsert = OutputArea.append_map[type].apply(
-		oa, [val, {}, selector]
-	    );
-	    $(container).empty().append(toinsert.contents());
-	    selector.remove();
-	}
-    }
-
-
-    $(document).ready(function() {
-	function initComm(evt, data) {
-	    var comm_manager = data.kernel.comm_manager;
-        //_.extend(comm_manager.targets, require("widgets/js/widget"))
-	    comm_manager.register_target("Signal", function (comm) {
-            comm.on_msg(function (msg) {
-                var val = msg.content.data.value;
-                $(".signal-" + comm.comm_id).each(function() {
-                var type = $(this).data("type");
-                if (typeof(val[type]) !== "undefined" && val[type] !== null) {
-                    redrawValue(this, type, val[type], type);
-                }
-                });
-                delete val;
-                delete msg.content.data.value;
-            });
-	    });
-
-	    // coordingate with Comm and redraw Signals
-	    // XXX: Test using Reactive here to improve performance
-	    $([IPython.events]).on(
-		'output_appended.OutputArea', function (event, type, value, md, toinsert) {
-		    if (md && md.reactive) {
-                // console.log(md.comm_id);
-                toinsert.addClass("signal-" + md.comm_id);
-                toinsert.data("type", type);
-                // Signal back indicating the mimetype required
-                var comm_manager = IPython.notebook.kernel.comm_manager;
-                var comm = comm_manager.comms[md.comm_id];
-                comm.then(function (c) {
-                    c.send({action: "subscribe_mime",
-                       mime: type});
-                    toinsert.bind("destroyed", function() {
-                        c.send({action: "unsubscribe_mime",
-                               mime: type});
-                    });
-                })
-		    }
-	    });
-	}
-
-	try {
-	    // try to initialize right away. otherwise, wait on the status_started event.
-	    initComm(undefined, IPython.notebook);
-	} catch (e) {
-	    $([IPython.events]).on('kernel_created.Kernel kernel_created.Session', initComm);
-	}
-    });
-})(IPython, jQuery, _, MathJax);
-</script>
-    <script>
-        window.interactLoadedFlag = true
-       $("#interact-js-shim").bind("destroyed", function () {
-           if (window.interactLoadedFlag) {
-               console.warn("JavaScript required by Interact will be removed if you remove this cell or run using Interact more than once.")
-           }
-       })
-       $([IPython.events]).on("kernel_starting.Kernel kernel_restarting.Kernel", function () { window.interactLoadedFlag = false })
-   </script>
-</div>
-</div>
-
-</div>
-
-</div>
-</div>
-
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="nd">@manipulate</span> <span class="k">for</span> <span class="n">m</span><span class="o">=</span><span class="p">[</span><span class="n">harris</span><span class="p">,</span> <span class="n">shi_tomasi</span><span class="p">,</span> <span class="n">kitchen_rosenfeld</span><span class="p">]</span>
@@ -747,14 +585,26 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[15]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[17]:</div>
 
 
 <div class="output_html rendered_html output_subarea ">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d8d89004-7e08-4879-966d-213e15ae5ff6"}</script>
+</div>
 
+</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_24_1.png"
+>
 </div>
 
 </div>
@@ -777,7 +627,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[18]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">features_1</span> <span class="o">=</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">);</span>
@@ -790,7 +640,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">summary</span><span class="p">(</span><span class="n">features_1</span><span class="p">)</span>
@@ -803,10 +653,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[17]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[19]:</div>
 
 
 
@@ -822,7 +672,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[20]:</div>
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">sizeof</span><span class="p">(</span><span class="n">features_1</span><span class="p">)</span>
@@ -835,10 +685,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[18]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[20]:</div>
 
 
 
@@ -865,7 +715,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="prompt input_prompt">In&nbsp;[19]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">))</span>
@@ -878,18 +728,18 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[19]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[21]:</div>
 
 <div class="output_subarea output_text output_error">
 <pre>
 MethodError: no method matching draw_points(::Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}, ::Array{Bool,2})
 Closest candidates are:
-  draw_points(::AbstractArray{T,N}, <span class="ansi-red-intense-fg ansi-bold">::BitArray{2}</span>; c) at In[12]:2
-  draw_points{T,N}(::AbstractArray{T,N}, <span class="ansi-red-intense-fg ansi-bold">::BitArray{N}</span>) at In[14]:2
-  draw_points{T,N}(::AbstractArray{T,N}, <span class="ansi-red-intense-fg ansi-bold">::BitArray{N}</span>, <span class="ansi-red-intense-fg ansi-bold">::ColorTypes.Colorant{T,N}</span>) at In[14]:2
+  draw_points(::AbstractArray{T,N}, <span class="ansi-red-intense-fg ansi-bold">::BitArray{2}</span>; c) at In[10]:2
+  draw_points{T,N}(::AbstractArray{T,N}, <span class="ansi-red-intense-fg ansi-bold">::BitArray{N}</span>) at In[12]:2
+  draw_points{T,N}(::AbstractArray{T,N}, <span class="ansi-red-intense-fg ansi-bold">::BitArray{N}</span>, <span class="ansi-red-intense-fg ansi-bold">::ColorTypes.Colorant{T,N}</span>) at In[12]:2
 </pre>
 </div>
 </div>
@@ -910,7 +760,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[22]:</div>
+<div class="prompt input_prompt">In&nbsp;[20]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="kt">BitArray</span> <span class="o">&lt;:</span> <span class="kt">AbstractArray</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}</span>
@@ -923,10 +773,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[20]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[22]:</div>
 
 
 
@@ -942,7 +792,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[23]:</div>
+<div class="prompt input_prompt">In&nbsp;[21]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="kt">Array</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">AbstractArray</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}</span>
@@ -955,10 +805,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[21]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[23]:</div>
 
 
 
@@ -974,7 +824,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[24]:</div>
+<div class="prompt input_prompt">In&nbsp;[22]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_points</span><span class="p">{</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">}(</span><span class="n">image</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">{</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">},</span> <span class="n">mask</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">{</span><span class="kt">Bool</span><span class="p">,</span> <span class="n">N</span><span class="p">},</span> <span class="n">c</span><span class="o">::</span><span class="n">Colorant</span><span class="o">=</span><span class="n">colorant</span><span class="s">&quot;yellow&quot;</span><span class="p">)</span>
@@ -991,10 +841,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[22]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[24]:</div>
 
 
 
@@ -1020,7 +870,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[25]:</div>
+<div class="prompt input_prompt">In&nbsp;[23]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">))</span>
@@ -1033,15 +883,15 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[23]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[25]:</div>
 
 
 
 <div class="output_png output_subarea output_execute_result">
-<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_38_0.png"
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_36_0.png"
 >
 </div>
 
@@ -1063,7 +913,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[26]:</div>
+<div class="prompt input_prompt">In&nbsp;[24]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="nd">@manipulate</span> <span class="k">for</span> <span class="n">percentile</span><span class="o">=</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
@@ -1078,14 +928,26 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[24]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[26]:</div>
 
 
 <div class="output_html rendered_html output_subarea ">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "046cc588-16ad-4958-8747-78841ebea0aa"}</script>
+</div>
 
+</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_38_1.png"
+>
 </div>
 
 </div>
@@ -1107,7 +969,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[27]:</div>
+<div class="prompt input_prompt">In&nbsp;[25]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">corners_percentile_and_local_maximum</span><span class="p">(</span><span class="n">img</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">percentile</span><span class="p">)</span>
@@ -1126,10 +988,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[25]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[27]:</div>
 
 
 
@@ -1145,7 +1007,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[28]:</div>
+<div class="prompt input_prompt">In&nbsp;[26]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="nd">@manipulate</span> <span class="k">for</span> <span class="n">percentile</span><span class="o">=</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
@@ -1160,26 +1022,25 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[26]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[28]:</div>
 
 
 <div class="output_html rendered_html output_subarea ">
-
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "046cc588-16ad-4958-8747-78841ebea0aa"}</script>
 </div>
 
 </div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[28]:</div>
 
 
 
 <div class="output_png output_subarea output_execute_result">
-<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_43_1.png"
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_41_1.png"
 >
 </div>
 
@@ -1195,7 +1056,7 @@ Closest candidates are:
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>As you can see, the resulting corners are very sparse (perhaps too sparse for our needs), so we're just going to stick to the plain old Harris corner detector without playing with percentiles.</p>
-<h1 id="Calculate-descriptors">Calculate descriptors<a class="anchor-link" href="#Calculate-descriptors">&#182;</a></h1><p>Now that we have points on the image that we think are interesting, we want to compute a description of each point that will hopefully help us when trying to find similar points in another image. The purpose of a feature descriptor is to store information about the "orientations" of edges and their magnitudes. The idea is that edges have directionality - a horizontal edge that is darker on the top half is different than a horizontal edge that is darker on the bottom half. So if you are eventually looking to match edges (or corners) from two images together, you need to somehow encode the directionality of these edges in what we call feature descriptors.</p>
+<h1 id="Calculating-descriptors">Calculating descriptors<a class="anchor-link" href="#Calculating-descriptors">&#182;</a></h1><p>Now that we have points on the image that we think are interesting, we want to compute a description of each point that will hopefully help us when trying to find similar points in another image. The purpose of a feature descriptor is to store information about the "orientations" of edges and their magnitudes. The idea is that edges have directionality - a horizontal edge that is darker on the top half is different than a horizontal edge that is darker on the bottom half. So if you are eventually looking to match edges (or corners) from two images together, you need to somehow encode the directionality of these edges in what we call feature descriptors.</p>
 <p>There are many options for feature descriptors. You might have heard of SIFT feature points - those work well, except for two problems: (1) the SIFT algorithm is patented, so you can't use it without paying license fees, and (2) SIFT generates a 128-dimensional vector for all the feature points. The good news is that feature descriptors like BRISK, BRIEF, and ORB were created that have similar properties to SIFT while being free and open, and they use fewer bits of information!</p>
 <p>The <code>ImageFeatures</code> package provides convenient wrappers around keypoints and features, since this is a pretty common operation in image processing. Of course, this means I'll have to make a new <code>draw_points()</code> method to see my keypoints. But no biggie, it's the same code. <code>Keypoints</code> can be constructed from a <code>BitArray</code> or an <code>Array{Bool}</code>, so we are in the clear.</p>
 
@@ -1204,7 +1065,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[29]:</div>
+<div class="prompt input_prompt">In&nbsp;[27]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_points</span><span class="p">(</span><span class="n">image</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">mask</span><span class="o">::</span><span class="n">Keypoints</span><span class="p">;</span> <span class="n">c</span><span class="o">::</span><span class="n">Colorant</span><span class="o">=</span><span class="n">colorant</span><span class="s">&quot;yellow&quot;</span><span class="p">)</span>
@@ -1221,10 +1082,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[27]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[29]:</div>
 
 
 
@@ -1240,7 +1101,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[30]:</div>
+<div class="prompt input_prompt">In&nbsp;[28]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">draw_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">Keypoints</span><span class="p">(</span><span class="n">imcorner</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">)))</span>
@@ -1253,15 +1114,15 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[28]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[30]:</div>
 
 
 
 <div class="output_png output_subarea output_execute_result">
-<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_46_0.png"
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_44_0.png"
 >
 </div>
 
@@ -1284,7 +1145,7 @@ Closest candidates are:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[31]:</div>
+<div class="prompt input_prompt">In&nbsp;[29]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="o">?</span><span class="n">Features</span>
@@ -1297,10 +1158,10 @@ Closest candidates are:
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[29]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[31]:</div>
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>search: <span class="ansi-bold">F</span><span class="ansi-bold">e</span><span class="ansi-bold">a</span><span class="ansi-bold">t</span><span class="ansi-bold">u</span><span class="ansi-bold">r</span><span class="ansi-bold">e</span><span class="ansi-bold">s</span> Image<span class="ansi-bold">F</span><span class="ansi-bold">e</span><span class="ansi-bold">a</span><span class="ansi-bold">t</span><span class="ansi-bold">u</span><span class="ansi-bold">r</span><span class="ansi-bold">e</span><span class="ansi-bold">s</span> <span class="ansi-bold">f</span><span class="ansi-bold">e</span><span class="ansi-bold">a</span><span class="ansi-bold">t</span><span class="ansi-bold">u</span><span class="ansi-bold">r</span><span class="ansi-bold">e</span>_tran<span class="ansi-bold">s</span>form <span class="ansi-bold">F</span><span class="ansi-bold">e</span><span class="ansi-bold">a</span><span class="ansi-bold">t</span><span class="ansi-bold">u</span><span class="ansi-bold">r</span><span class="ansi-bold">e</span>
@@ -1311,7 +1172,6 @@ Closest candidates are:
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[31]:</div>
 
 
 <div class="output_markdown rendered_html output_subarea output_execute_result">
@@ -1330,7 +1190,7 @@ features = Features(keypoints)</code></pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[32]:</div>
+<div class="prompt input_prompt">In&nbsp;[30]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">brisk_params</span> <span class="o">=</span> <span class="n">BRISK</span><span class="p">();</span>
@@ -1348,7 +1208,7 @@ features = Features(keypoints)</code></pre>
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>If we calculate the descriptors for both images, we can use the <code>match_keypoints</code> function to match both images. What it does (as implemented in <code>ImageFeatures</code>), is match feature points computed on two images using a Hamming Distance function, since BRISK features output a set of binary vectors for each keypoint. The <code>Hamming Distance</code> is basically "how many bits different" are two vectors. So the vectors <code>[1, 1, 1]</code> and <code>[0, 0, 0]</code> have a Hamming Distance of 3, while the vectors <code>[1, 1, 1]</code> and <code>[1, 1, 0]</code> have a Hamming Distance of 1.</p>
+<h1 id="Matching-keypoints">Matching keypoints<a class="anchor-link" href="#Matching-keypoints">&#182;</a></h1><p>If we calculate the descriptors for both images, we can use the <code>match_keypoints</code> function to match both images together. What it does (as implemented in <code>ImageFeatures</code>), is match feature points computed on two images using a Hamming Distance function on the feature descriptors, since BRISK features output a set of binary vectors for each keypoint. The <code>Hamming Distance</code> is basically "how many bits different" are two vectors. So the vectors <code>[1, 1, 1]</code> and <code>[0, 0, 0]</code> have a Hamming Distance of 3, while the vectors <code>[1, 1, 1]</code> and <code>[1, 1, 0]</code> have a Hamming Distance of 1. What this means is that the smaller the Hamming distance between two keypoint descriptors, the more likely they are to match. To make sure that only one keypoint in each image is matched, for each keypoint in the first image, take the keypoint in the second image with the smallest Hamming distance.</p>
 <p>I'm going to make a wrapper <code>get_descriptors</code> function so I don't need to remember all the arguments to pass.</p>
 
 </div>
@@ -1356,7 +1216,7 @@ features = Features(keypoints)</code></pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[33]:</div>
+<div class="prompt input_prompt">In&nbsp;[31]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">get_descriptors</span><span class="p">(</span><span class="n">img</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">)</span>
@@ -1380,10 +1240,10 @@ features = Features(keypoints)</code></pre>
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[31]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[33]:</div>
 
 
 
@@ -1409,7 +1269,7 @@ features = Features(keypoints)</code></pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[34]:</div>
+<div class="prompt input_prompt">In&nbsp;[32]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="c"># Pkg.clone(&quot;https://github.com/JuliaImages/ImageDraw.jl&quot;);</span>
@@ -1423,7 +1283,7 @@ features = Features(keypoints)</code></pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[35]:</div>
+<div class="prompt input_prompt">In&nbsp;[33]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">matches</span> <span class="o">=</span> <span class="n">match_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">);</span>
@@ -1436,7 +1296,7 @@ features = Features(keypoints)</code></pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[36]:</div>
+<div class="prompt input_prompt">In&nbsp;[34]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">draw_matches</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="n">matches</span><span class="p">)</span>
@@ -1456,10 +1316,10 @@ features = Features(keypoints)</code></pre>
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[34]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[36]:</div>
 
 
 
@@ -1473,9 +1333,18 @@ features = Features(keypoints)</code></pre>
 </div>
 
 </div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="The-end-result">The end result<a class="anchor-link" href="#The-end-result">&#182;</a></h1>
+</div>
+</div>
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[37]:</div>
+<div class="prompt input_prompt">In&nbsp;[35]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">draw_matches</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="n">matches</span><span class="p">)</span>
@@ -1488,15 +1357,15 @@ features = Features(keypoints)</code></pre>
 <div class="output_wrapper">
 <div class="output">
 
+<div class="prompt output_prompt">Out[35]:</div>
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[37]:</div>
 
 
 
 <div class="output_png output_subarea output_execute_result">
-<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_56_0.png"
+<img src="/assets/imgs/05-image-stitching-part-1/05-image-stitching-part-1_55_0.png"
 >
 </div>
 
@@ -1519,4 +1388,8 @@ features = Features(keypoints)</code></pre>
 </div>
 </div>
  
+
+<script type="application/vnd.jupyter.widget-state+json">
+{"state": {"d8d89004-7e08-4879-966d-213e15ae5ff6": {"model_module": "jupyter-js-widgets", "state": {"_options_labels": ["Images.harris", "Images.shi_tomasi", "Images.kitchen_rosenfeld"], "tooltips": [], "orientation": "horizontal", "msg_throttle": 3, "icons": [], "value": "Images.harris", "readout": true, "visible": true, "selected_label": "Images.harris", "model_name": "ToggleButtonsModel", "description": "m"}, "model_name": "ToggleButtonsModel", "model_module_version": "^2.1.4"}, "597ba70d-2823-413f-aaf2-045219939915": {"model_module": "jupyter-js-widgets", "state": {"_options_labels": ["Images.harris", "Images.shi_tomasi", "Images.kitchen_rosenfeld"], "tooltips": [], "orientation": "horizontal", "msg_throttle": 3, "icons": [], "value": "Images.harris", "readout": true, "visible": true, "selected_label": "Images.harris", "model_name": "ToggleButtonsModel", "description": "m"}, "model_name": "ToggleButtonsModel", "model_module_version": "^2.1.4"}, "046cc588-16ad-4958-8747-78841ebea0aa": {"model_module": "jupyter-js-widgets", "state": {"_options_labels": ["0.01", "0.030204081632653063", "0.05040816326530612", "0.07061224489795918", "0.09081632653061225", "0.1110204081632653", "0.13122448979591836", "0.15142857142857144", "0.1716326530612245", "0.19183673469387755", "0.2120408163265306", "0.23224489795918368", "0.2524489795918367", "0.2726530612244898", "0.29285714285714287", "0.3130612244897959", "0.333265306122449", "0.35346938775510206", "0.3736734693877551", "0.39387755102040817", "0.41408163265306125", "0.4342857142857143", "0.45448979591836736", "0.4746938775510204", "0.49489795918367346", "0.5151020408163265", "0.5353061224489796", "0.5555102040816327", "0.5757142857142857", "0.5959183673469388", "0.6161224489795918", "0.6363265306122449", "0.656530612244898", "0.676734693877551", "0.6969387755102041", "0.7171428571428572", "0.7373469387755102", "0.7575510204081632", "0.7777551020408163", "0.7979591836734694", "0.8181632653061225", "0.8383673469387755", "0.8585714285714285", "0.8787755102040816", "0.8989795918367347", "0.9191836734693878", "0.9393877551020409", "0.9595918367346938", "0.9797959183673469", "1.0"], "tooltips": [], "description": "percentile", "selected_label": "0.49489795918367346", "icons": [], "value": "0.49489795918367346", "visible": true, "msg_throttle": 3, "model_name": "SelectionSliderModel"}, "model_name": "SelectionSliderModel", "model_module_version": "^2.1.4"}, "0ca88719-27da-47dc-812d-839ecb7bb16d": {"model_module": "jupyter-js-widgets", "state": {"_options_labels": ["0.01", "0.030204081632653063", "0.05040816326530612", "0.07061224489795918", "0.09081632653061225", "0.1110204081632653", "0.13122448979591836", "0.15142857142857144", "0.1716326530612245", "0.19183673469387755", "0.2120408163265306", "0.23224489795918368", "0.2524489795918367", "0.2726530612244898", "0.29285714285714287", "0.3130612244897959", "0.333265306122449", "0.35346938775510206", "0.3736734693877551", "0.39387755102040817", "0.41408163265306125", "0.4342857142857143", "0.45448979591836736", "0.4746938775510204", "0.49489795918367346", "0.5151020408163265", "0.5353061224489796", "0.5555102040816327", "0.5757142857142857", "0.5959183673469388", "0.6161224489795918", "0.6363265306122449", "0.656530612244898", "0.676734693877551", "0.6969387755102041", "0.7171428571428572", "0.7373469387755102", "0.7575510204081632", "0.7777551020408163", "0.7979591836734694", "0.8181632653061225", "0.8383673469387755", "0.8585714285714285", "0.8787755102040816", "0.8989795918367347", "0.9191836734693878", "0.9393877551020409", "0.9595918367346938", "0.9797959183673469", "1.0"], "tooltips": [], "description": "percentile", "selected_label": "0.49489795918367346", "icons": [], "value": "0.49489795918367346", "visible": true, "msg_throttle": 3, "model_name": "SelectionSliderModel"}, "model_name": "SelectionSliderModel", "model_module_version": "^2.1.4"}, "0d0e7e09-3e80-49cf-8adf-0520c94e2cdf": {"model_module": "jupyter-js-widgets", "state": {"_options_labels": ["0.5", "0.5102040816326531", "0.5204081632653061", "0.5306122448979592", "0.5408163265306123", "0.5510204081632653", "0.5612244897959183", "0.5714285714285714", "0.5816326530612245", "0.5918367346938775", "0.6020408163265306", "0.6122448979591837", "0.6224489795918368", "0.6326530612244898", "0.6428571428571429", "0.6530612244897959", "0.6632653061224489", "0.673469387755102", "0.6836734693877551", "0.6938775510204082", "0.7040816326530612", "0.7142857142857143", "0.7244897959183674", "0.7346938775510204", "0.7448979591836735", "0.7551020408163265", "0.7653061224489796", "0.7755102040816326", "0.7857142857142857", "0.7959183673469388", "0.8061224489795918", "0.8163265306122449", "0.826530612244898", "0.8367346938775511", "0.8469387755102041", "0.8571428571428571", "0.8673469387755102", "0.8775510204081632", "0.8877551020408163", "0.8979591836734694", "0.9081632653061225", "0.9183673469387755", "0.9285714285714286", "0.9387755102040817", "0.9489795918367347", "0.9591836734693877", "0.9693877551020408", "0.9795918367346939", "0.9897959183673469", "1.0"], "tooltips": [], "description": "percentile", "selected_label": "0.7448979591836735", "icons": [], "value": "0.7448979591836735", "visible": true, "msg_throttle": 3, "model_name": "SelectionSliderModel"}, "model_name": "SelectionSliderModel", "model_module_version": "^2.1.4"}, "fe136195-0569-433a-9b9f-5ed0a2397b10": {"model_module": "jupyter-js-widgets", "state": {"_options_labels": ["0.5", "0.5102040816326531", "0.5204081632653061", "0.5306122448979592", "0.5408163265306123", "0.5510204081632653", "0.5612244897959183", "0.5714285714285714", "0.5816326530612245", "0.5918367346938775", "0.6020408163265306", "0.6122448979591837", "0.6224489795918368", "0.6326530612244898", "0.6428571428571429", "0.6530612244897959", "0.6632653061224489", "0.673469387755102", "0.6836734693877551", "0.6938775510204082", "0.7040816326530612", "0.7142857142857143", "0.7244897959183674", "0.7346938775510204", "0.7448979591836735", "0.7551020408163265", "0.7653061224489796", "0.7755102040816326", "0.7857142857142857", "0.7959183673469388", "0.8061224489795918", "0.8163265306122449", "0.826530612244898", "0.8367346938775511", "0.8469387755102041", "0.8571428571428571", "0.8673469387755102", "0.8775510204081632", "0.8877551020408163", "0.8979591836734694", "0.9081632653061225", "0.9183673469387755", "0.9285714285714286", "0.9387755102040817", "0.9489795918367347", "0.9591836734693877", "0.9693877551020408", "0.9795918367346939", "0.9897959183673469", "1.0"], "tooltips": [], "description": "percentile", "selected_label": "0.7448979591836735", "icons": [], "value": "0.7448979591836735", "visible": true, "msg_throttle": 3, "model_name": "SelectionSliderModel"}, "model_name": "SelectionSliderModel", "model_module_version": "^2.1.4"}}, "version_minor": 0, "version_major": 1}
+</script>
 

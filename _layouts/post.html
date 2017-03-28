@@ -1,6 +1,7 @@
 ---
 layout: default
 mathjax: false
+widgets: false
 ---
 <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
 
@@ -10,6 +11,10 @@ mathjax: false
 
     {% if page.mathjax %}
       {% include mathjax.html %}
+    {% endif %}
+
+    {% if page.widgets %}
+      {% include widgets.html %}
     {% endif %}
   </header>
 
