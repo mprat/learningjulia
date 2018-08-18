@@ -1,0 +1,27 @@
+---
+layout: post
+title:  "JuliaCon 2018"
+date:   2018-08-17
+mathjax: false
+widgets: false
+---
+
+My boyfriend [Robin](http://robindeits.com/) and I went to JuliaCon 2018 this year in London, UK, and we had a blast! As a newcomer (and dabbler) in Julia, I felt like some of the talks would be over my head. However, I found the community very inclusive, and people were willing to answer my questions. Oh, and [Robin gave a talk that a lot of people liked](https://www.youtube.com/watch?v=dmWQtI3DFFo).
+
+<!--more-->
+
+One thing the conference did really well this year was to record (and live-stream on Youtube) all the conference talks. It really makes a big difference, since now not just the 200 people that were at the conference can enjoy the presentations.
+
+Over the past year I've had a big project I was working on that left no room for other endeavors, so Learning Julia has fallen by the wayside. Now that my time has freed up, JuliaCon was a great way to get motivated to get back to Learning Julia properly!
+
+Here were some of my favorite talks and learnings from the conference:
+
+* [Flux.jl](https://github.com/FluxML/Flux.jl) is a deep learning library written in pure Julia. This is old news. The awesome news that I hadn't seen before was the existance of [FluxJS.jl](https://github.com/FluxML/FluxJS.jl), which enables you to export your Flux models into Javascript that you can run on the web, like [this one](http://fluxjs-demos.gotfork.net/fmnist-mlp)! Check out the full 15-minute talk [on Youtube](https://www.youtube.com/watch?v=ZmvC-G4U0WM&t=0s&list=PLP8iPy9hna6Qsq5_-zrg0NTwqDSDYtfQB&index=45).
+* An awesome package called [Latexify.jl](https://github.com/korsbo/Latexify.jl) makes it easy to format Julia objects into Latex, for papers! Check out the [talk on Youtube](https://www.youtube.com/watch?v=wpV0Nz-93Hk&t=0s&list=PLP8iPy9hna6Qsq5_-zrg0NTwqDSDYtfQB&index=42). Don't worry, it's only 11 minutes long.
+* While many laud the JIT compiler of Julia, some applications (particularly in production systems) really need to be compiled ahead-of-time and deployed as binaries. There was one such group who did so, using [PackageCompiler.jl](https://github.com/JuliaLang/PackageCompiler.jl) from Julia Computing. Watch the talk on how Tangent Work uses this in a production system [here](https://www.youtube.com/watch?v=YCgtEXaoS40&t=0s&list=PLP8iPy9hna6Qsq5_-zrg0NTwqDSDYtfQB&index=65).
+* Matt Bauman, Julia Computing extraordinaire, gave a [great talk](https://www.youtube.com/watch?v=jS9eouMJf_Y&t=0s&list=PLP8iPy9hna6Qsq5_-zrg0NTwqDSDYtfQB&index=85) about arrays in Julia and why they are fast. It definitely gave me, as someone who is not in the guts of Julia constantly, some insight into how to write slightly better Julia code.
+* Mike Croucher from the University of Leeds gave an inspiring talk on the "Rise of the Research Engineer" that really spoke to me. He argues for more resources to fund scientifically-minded researchers to build robust software to enable other research, rather than forcing them to publish to stay in academia.
+
+In addition to the talks, the conference marked the official release of Julia 1.0! Nothing does it justice like the blog post on the [official Julia blog](https://julialang.org/blog/2018/08/one-point-zero), so you should go read that!
+
+I'll be back to updating my progress with Learning Julia soon enough - I've taken on some new projects recently, and I'm trying Julia out for them! Stay tuned!

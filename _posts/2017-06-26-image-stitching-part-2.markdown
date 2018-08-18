@@ -4,9 +4,10 @@ title:  "Image Stitching: Part 2"
 date:   2017-06-26
 mathjax: true
 widgets: true
+published: false
 ---
 
-This is Part 2 of 2 in my posts about how to stitch two images together using Julia. It's rough around the edges, since I'm learning how to do this myself. In [Part 1]({% post_url 2017-03-26-image-stitching-part-2 %}) I talked about finding keypoints, descriptors, and matching two images together. This time, in Part 2, I'll talk about how to estimate the image transformation and how to actually do the stitching.
+This is Part 2 of 2 in my posts about how to stitch two images together using Julia. It's rough around the edges, since I'm learning how to do this myself. In [Part 1]({% post_url 2017-03-26-image-stitching-part-1 %}) I talked about finding keypoints, descriptors, and matching two images together. This time, in Part 2, I'll talk about how to estimate the image transformation and how to actually do the stitching.
 
 ## Updating Julia versions
 
