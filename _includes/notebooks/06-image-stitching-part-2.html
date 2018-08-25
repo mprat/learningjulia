@@ -1,0 +1,1247 @@
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In this notebook, I will work on part 2 of the image stitching series. Between this post and the <a href="http://learningjulia.com/2017/03/26/image-stitching-part-1.html">previous post</a>, I go through all 7 steps of an image stitching pipeline:</p>
+<ol>
+<li>Extracting feature points (<em>Part 1</em>)</li>
+<li>Calculate descriptors (<em>Part 1</em>)</li>
+<li>Match points (<em>Part 1</em>)</li>
+<li>Calculate transformation (<em>Part 2</em>)</li>
+<li>Transforming the image (<em>Part 2</em>)</li>
+<li>Using RANSAC to improve transformation computation (<em>Part 2</em>)</li>
+<li>Stitch images (<em>Part 2</em>)</li>
+</ol>
+<p>In this notebook, I'll go through Part 2: calculating a transformation and actually stitching the images together. In the course of writing this post, I learned all about <a href="https://github.com/JuliaArrays/OffsetArrays.jl/blob/master/src/OffsetArrays.jl">OffsetArrays</a> and how they can be useful for image processing in Julia!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">using</span> <span class="n">ImageFeatures</span><span class="p">,</span> <span class="n">Images</span><span class="p">,</span> <span class="n">FileIO</span><span class="p">,</span> <span class="n">ImageDraw</span><span class="p">;</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>I'll use the same two images I used in the previous post, two images of the Stata Center in Cambridge, MA. At the end of the post, we'll stitch them together in one large image.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">img1</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s">&quot;imgs/stata-1.png&quot;</span><span class="p">)</span>
+<span class="n">img2</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s">&quot;imgs/stata-2.png&quot;</span><span class="p">)</span>
+<span class="p">[</span><span class="n">img1</span> <span class="n">img2</span><span class="p">]</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[2]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/06-image-stitching-part-2/06-image-stitching-part-2_3_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>To recap steps 1 through 3 from the previous post, we extracted feature points, calculated feature descriptors, and matched the points together. I'm going to copy over the <code>get_descriptors</code> and <code>match_points</code> functions directly.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">get_descriptors</span><span class="p">(</span><span class="n">img</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">)</span>
+    <span class="n">imgp</span> <span class="o">=</span> <span class="n">parent</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+    <span class="n">brisk_params</span> <span class="o">=</span> <span class="n">BRISK</span><span class="p">()</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="n">Features</span><span class="p">(</span><span class="n">Keypoints</span><span class="p">(</span><span class="n">imcorner</span><span class="p">(</span><span class="n">imgp</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">harris</span><span class="p">)))</span>
+    <span class="n">desc</span><span class="p">,</span> <span class="n">ret_features</span> <span class="o">=</span> <span class="n">create_descriptor</span><span class="p">(</span><span class="n">Gray</span><span class="o">.</span><span class="p">(</span><span class="n">imgp</span><span class="p">),</span> <span class="n">features</span><span class="p">,</span> <span class="n">brisk_params</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">match_points</span><span class="p">(</span><span class="n">img1</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">img2</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="n">threshold</span><span class="o">::</span><span class="kt">Float64</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">img1p</span> <span class="o">=</span> <span class="n">parent</span><span class="p">(</span><span class="n">img1</span><span class="p">)</span>
+    <span class="n">img2p</span> <span class="o">=</span> <span class="n">parent</span><span class="p">(</span><span class="n">img2</span><span class="p">)</span>
+    <span class="n">desc_1</span><span class="p">,</span> <span class="n">ret_features_1</span> <span class="o">=</span> <span class="n">get_descriptors</span><span class="p">(</span><span class="n">img1p</span><span class="p">)</span>
+    <span class="n">desc_2</span><span class="p">,</span> <span class="n">ret_features_2</span> <span class="o">=</span> <span class="n">get_descriptors</span><span class="p">(</span><span class="n">img2p</span><span class="p">)</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="n">match_keypoints</span><span class="p">(</span>
+        <span class="n">Keypoints</span><span class="p">(</span><span class="n">ret_features_1</span><span class="p">),</span> <span class="n">Keypoints</span><span class="p">(</span><span class="n">ret_features_2</span><span class="p">),</span>
+        <span class="n">desc_1</span><span class="p">,</span> <span class="n">desc_2</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[3]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>match_points (generic function with 2 methods)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>But, I'm going to modify my <code>draw_matches</code> functions slightly. It might be the case that we want to match points between two images that are different vertical sizes. To make this happen, we will first need to put both images on the same canvas. To do this, I'm going to make a <code>pad_display</code> function and update my <code>draw_matches</code> function to use it. I in fact figured out that I needed this modification much later in the process of creating this post, but the beauty of Jupyter notebooks is that I can do back and edit things as I need, and use them later.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="c"># this function takes the two images and concatenates them horizontally.</span>
+<span class="c"># to horizontally concatenate, both images need to be made the same</span>
+<span class="c"># vertical size</span>
+<span class="k">function</span> <span class="n">pad_display</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">)</span>
+    <span class="n">img1h</span> <span class="o">=</span> <span class="n">length</span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">img2h</span> <span class="o">=</span> <span class="n">length</span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">mx</span> <span class="o">=</span> <span class="n">max</span><span class="p">(</span><span class="n">img1h</span><span class="p">,</span> <span class="n">img2h</span><span class="p">);</span>
+    <span class="n">hcat</span><span class="p">(</span><span class="n">vcat</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">zeros</span><span class="p">(</span><span class="n">RGB</span><span class="p">{</span><span class="kt">Float64</span><span class="p">},</span>
+                <span class="n">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">mx</span> <span class="o">-</span> <span class="n">img1h</span><span class="p">),</span> <span class="n">length</span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))),</span>
+        <span class="n">vcat</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="n">zeros</span><span class="p">(</span><span class="n">RGB</span><span class="p">{</span><span class="kt">Float64</span><span class="p">},</span>
+                <span class="n">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">mx</span> <span class="o">-</span> <span class="n">img2h</span><span class="p">),</span> <span class="n">length</span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))))</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">draw_matches</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="n">matches</span><span class="p">)</span>
+    <span class="c"># instead of having grid = [img1 img2], we&#39;ll use the new</span>
+    <span class="c"># pad_display() function</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">pad_display</span><span class="p">(</span><span class="n">parent</span><span class="p">(</span><span class="n">img1</span><span class="p">),</span> <span class="n">parent</span><span class="p">(</span><span class="n">img2</span><span class="p">));</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="kt">CartesianIndex</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mi">2</span><span class="p">));</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="kp">in</span> <span class="n">matches</span>
+        <span class="n">draw!</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">LineSegment</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">offset</span><span class="p">))</span>
+    <span class="k">end</span>
+    <span class="n">grid</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[4]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>draw_matches (generic function with 1 method)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's make sure it all works!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">matches</span> <span class="o">=</span> <span class="n">match_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">);</span>
+<span class="n">draw_matches</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="n">matches</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[5]:</div>
+
+<div class="output_area">
+
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre><span class="ansi-yellow-intense-fg ansi-bold">WARNING: </span><span class="ansi-yellow-fg">one(ColorTypes.RGB{Float64}) will soon switch to returning 1; you might need to switch to `oneunit`</span>
+Stacktrace:
+ [1] <span class="ansi-bold">depwarn</span><span class="ansi-bold">(</span>::String, ::Symbol<span class="ansi-bold">)</span> at <span class="ansi-bold">./deprecated.jl:70</span>
+ [2] <span class="ansi-bold">one</span><span class="ansi-bold">(</span>::Type{ColorTypes.RGB{Float64}}<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/ColorVectorSpace/src/ColorVectorSpace.jl:356</span>
+ [3] <span class="ansi-bold">draw!</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/ImageDraw/src/line2d.jl:64</span> [inlined] (repeats 2 times)
+ [4] <span class="ansi-bold">draw_matches</span><span class="ansi-bold">(</span>::Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}, ::Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}, ::Array{Array{CartesianIndex{2},1},1}<span class="ansi-bold">)</span> at <span class="ansi-bold">./In[4]:20</span>
+ [5] <span class="ansi-bold">include_string</span><span class="ansi-bold">(</span>::String, ::String<span class="ansi-bold">)</span> at <span class="ansi-bold">./loading.jl:515</span>
+ [6] <span class="ansi-bold">execute_request</span><span class="ansi-bold">(</span>::ZMQ.Socket, ::IJulia.Msg<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/IJulia/src/execute_request.jl:180</span>
+ [7] <span class="ansi-bold">(::Compat.#inner#14{Array{Any,1},IJulia.#execute_request,Tuple{ZMQ.Socket,IJulia.Msg}})</span><span class="ansi-bold">(</span><span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/Compat/src/Compat.jl:332</span>
+ [8] <span class="ansi-bold">eventloop</span><span class="ansi-bold">(</span>::ZMQ.Socket<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/IJulia/src/eventloop.jl:8</span>
+ [9] <span class="ansi-bold">(::IJulia.##15#18)</span><span class="ansi-bold">(</span><span class="ansi-bold">)</span> at <span class="ansi-bold">./task.jl:335</span>
+while loading In[5], in expression starting on line 2
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/06-image-stitching-part-2/06-image-stitching-part-2_9_1.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><em>Note that the <code>draw_matches</code> function throws a warning that comes from the <code>ImageDraw</code> package. Right now we're just going to ignore this warning, but hopefully in a future notebook I can figure out how to fix it!</em></p>
+<h1 id="Calculate-Transformation">Calculate Transformation<a class="anchor-link" href="#Calculate-Transformation">&#182;</a></h1><p>Now that we've found the pairs of pixels that correspond between the two images, we can use those matches to find a matrix that describes the transformation from one image to another. We can then use this transformation to warp one of the images and do the stitching.</p>
+<p>To calculate the transformation from one image to another, we compute a transformation called a <strong>homography</strong>. It is based on the "pinhole camera assumption", where the same scene taken from the same camera is related by rotation, translation, and skew. <a href="https://docs.opencv.org/3.4.1/d9/dab/tutorial_homography.html">This OpenCV tutorial</a> has a good, practical example of homography estimation with some geometric examples.</p>
+<p>A homography matrix has 8 free parameters - this means that with 4 pairs of matched points in our image, we can compute a homography that describes how to transform from the first set to the second set of points.</p>
+<p>Usually, I am a fan of reusing someone else's code that is well-written, but in this case I had to take matters into my own hands.</p>
+<p>The <a href="https://github.com/peterkovesi/ImageProjectiveGeometry.jl">ImageProjectiveGeometry</a> package implements a homography filling algorithm, but the package was built for Julia 0.4 and I had a hard time getting to play nice with my Julia 0.6 environment. Instead, I am going to write my own code for this in Julia.</p>
+<p>My homography function is going to take some <code>matches</code> returned from our descriptor matching function; as a reminder, <code>matches</code> is returned as an array of <code>Keypoints</code>.</p>
+<p>To make our homography computation easier, we will create a new type (with the <code>immutable</code> keyword) that is a 3 x 3 matrix, that is also a subtype of an <code>AbstractAffineMap</code> from the <a href="https://github.com/FugroRoames/CoordinateTransformations.jl">CoordinateTransformations</a> package. We do this because the <code>CoordinateTransformations</code> package has a <code>warp</code> function that can be used to apply this transformation (i.e. homography) to images, without having to write our own projection code.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">using</span> <span class="n">CoordinateTransformations</span><span class="p">,</span> <span class="n">StaticArrays</span><span class="p">,</span> <span class="n">ImageTransformations</span><span class="p">;</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">immutable</span> <span class="n">Homography</span><span class="p">{</span><span class="n">T</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="n">AbstractAffineMap</span>
+    <span class="n">m</span><span class="o">::</span><span class="n">SMatrix</span><span class="p">{</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">9</span><span class="p">}</span>
+<span class="k">end</span>
+
+<span class="c"># having T in the RHS forces calling the constructor again</span>
+<span class="n">Homography</span><span class="p">{</span><span class="n">T</span><span class="p">}(</span><span class="n">m</span><span class="o">::</span><span class="kt">AbstractMatrix</span><span class="p">{</span><span class="n">T</span><span class="p">})</span> <span class="o">=</span> <span class="n">Homography</span><span class="p">{</span><span class="n">T</span><span class="p">}(</span><span class="n">m</span><span class="p">);</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now that we've set up the homography data type, we can actually write the function that will compute the homography. We want to apply it to an array if <code>Keypoints</code> that we previously computed (and matched).</p>
+<p>There are typically 2 ways in which a homography is computed:</p>
+<ol>
+<li>"Exactly", using 4 pairs of points. Because there are 9 unknowns in the homography matrix (one of which we always set to 1, so it's really 9 up to a scale factor), we can solve an exact system of linear equations with 4 pairs of points to get the exact homography between the pairs. Each pair of points creates 2 linear equations, so with 4 pairs of points you get 8 equations, which is enough to determine an exact solution (up to a scale factor, since we want the bottom-right entry in the homography matrix to be 1).</li>
+<li>Using the "least-squares" method. With more than 4 pairs of points, your system equations is overconstrained, so you need to find the best "average" homography that fits all the pairs.</li>
+</ol>
+<p>To set up the system of equations to compute a homography, we set up a a system of equations as follows: knowing that a homography relates two points $u$ and $v$ in 3D space by $v = H u \rightarrow H u - v = 0$, which is  homogenous linear equation of the form $A x = 0$ (with some clever re-arranging of the coefficients). Because we deal with 2D points (i.e. locations in an image), the 3rd dimension of $u$ and $v$ is always 1. With a little bit of algebraic manipulation you get that each pair of points contributes these 2 equations to the matrix $A$:</p>
+\begin{equation}
+H u - v = 0
+\end{equation}\begin{equation}
+\begin{bmatrix}
+h_1 & h_2 & h_3 \\
+h_4 & h_5 & h_6 \\
+h_7 & h_8 & h_9
+\end{bmatrix}\begin{bmatrix}
+u_1 \\ u_2 \\ 1
+\end{bmatrix}
+-
+\begin{bmatrix}
+v_1 \\ v_2 \\ 1
+\end{bmatrix} = 0
+\end{equation}\begin{equation}
+\begin{bmatrix}
+0 & 0 & 0 & -u_1 & -u_2 & 1 & v_2 u_1 & v_2 u_2 & v_2 \\
+u_1 & u_2 & 1 & 0 & 0 & 0 & -v_1 u_1 & -v_1 u_2 & -v_1
+\end{bmatrix}\begin{bmatrix}
+h_1 \\ h_2 \\ h_3 \\ h_4 \\ h_5 \\ h_6 \\ h_7 \\ h_8 \\ h_9
+\end{bmatrix} = 0
+\end{equation}\begin{equation}
+A x = 0
+\end{equation}<p>When we have more points, we just have more instances of the pair of equations on the left-hand side in Equation (3), with the same homography-matrix-as-a-column-vector on the right.</p>
+<p>The good news is that in both cases (exact solution &amp; least-squares estimation), we can use the same method: applying singular value decomposition (SVD) on the resulting equation matrix $A$ and take the smallest eigenvector. When do this with only 4 points, you get the exact solution to the system of equations.</p>
+<p>My <code>compute_homography</code> function below re-creates this linear system of equations and solves it using SVD.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">compute_homography</span><span class="p">(</span><span class="n">matches</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="n">Keypoints</span><span class="p">})</span>
+    <span class="c"># eigenvector of A^T A with the smallest eigenvalue</span>
+    
+    <span class="c"># construct A matrix</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">length</span><span class="p">(</span><span class="n">matches</span><span class="p">),</span> <span class="mi">9</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">match</span><span class="p">)</span> <span class="kp">in</span> <span class="n">enumerate</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span>
+        <span class="n">match1</span><span class="p">,</span> <span class="n">match2</span> <span class="o">=</span> <span class="n">match</span>
+        <span class="n">base_index_x</span> <span class="o">=</span> <span class="n">index</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">base_index_y</span> <span class="o">=</span> <span class="mi">1</span><span class="o">:</span><span class="mi">3</span>
+        <span class="n">A</span><span class="p">[</span><span class="n">base_index_x</span><span class="p">,</span> <span class="n">base_index_y</span><span class="p">]</span> <span class="o">=</span> <span class="n">float</span><span class="p">([</span><span class="n">match1</span><span class="o">.</span><span class="nb">I</span><span class="o">...</span><span class="p">;</span> <span class="mi">1</span><span class="p">;])</span>
+        <span class="n">A</span><span class="p">[</span><span class="n">base_index_x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="o">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">base_index_x</span><span class="p">,</span> <span class="n">base_index_y</span><span class="p">]</span>
+        <span class="n">A</span><span class="p">[</span><span class="n">base_index_x</span><span class="p">,</span> <span class="mi">7</span><span class="o">:</span><span class="mi">9</span><span class="p">]</span> <span class="o">=</span>
+            <span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">A</span><span class="p">[</span><span class="n">base_index_x</span><span class="p">,</span> <span class="n">base_index_y</span><span class="p">]</span> <span class="o">*</span> <span class="n">match2</span><span class="o">.</span><span class="nb">I</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">A</span><span class="p">[</span><span class="n">base_index_x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="o">:</span><span class="mi">9</span><span class="p">]</span> <span class="o">=</span>
+            <span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">A</span><span class="p">[</span><span class="n">base_index_x</span><span class="p">,</span> <span class="n">base_index_y</span><span class="p">]</span> <span class="o">*</span> <span class="n">match2</span><span class="o">.</span><span class="nb">I</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">end</span>
+  
+    <span class="n">A</span>
+    <span class="c"># find the smallest eigenvector, normalize, and reshape</span>
+    <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">Vt</span> <span class="o">=</span> <span class="n">svd</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+    
+    <span class="c"># normalize the homography at the end, since we know the (3, 3)</span>
+    <span class="c"># entry should be 1.</span>
+    <span class="n">Homography</span><span class="p">(</span><span class="n">reshape</span><span class="p">(</span><span class="n">Vt</span><span class="p">[</span><span class="o">:</span><span class="p">,</span> <span class="k">end</span><span class="p">]</span> <span class="o">./</span> <span class="n">Vt</span><span class="p">[</span><span class="k">end</span><span class="p">][</span><span class="k">end</span><span class="p">],</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span><span class="o">&#39;</span><span class="p">)</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[8]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>compute_homography (generic function with 1 method)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><em>As an aside, I learned about multi-line commands in Julia. Take for instance line 12 in the <code>compute_homography</code> function above. It was too long to read on the blog, so I split it up into multiple lines. Julia will ignore all whitespace (and look at the next line for command input) until it finds a complete command. So you can put any whitespace you want in your Julia code. I like to keep it ~80 characters per line, for easy readability.</em></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now that we've computed the homography, we want to actually apply it to points that we got from the image.</p>
+<p>Because a homography is a 3x3 matrix, it is applied to  a point in 3D space. However, if we want to apply it to a point in 2D space (like for example, the point $(1, 1)$, which is the image origin), we need to append $1.0$ as the last element.</p>
+<p>The output of a homography transformation is always a point in 2D space, so we need to transform the result of the homography from a 3D coordinate to a normalized 2D coordinate. We take advantage of Julia's multiple dispatch (i.e. calling of methods based on the types of the arguments) to make a bunch of utility methods that override the <code>()</code> operator and take care of this 3D / 2D conversion for us.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="c"># these 5 functions override the () operator, so we can</span>
+<span class="c"># do something like H(image) and have H (the homography)</span>
+<span class="c"># be applied to the image, SVector{2}, cartesian index,</span>
+<span class="c"># or tuple.</span>
+<span class="k">function</span> <span class="p">(</span><span class="n">trans</span><span class="o">::</span><span class="n">Homography</span><span class="p">{</span><span class="n">M</span><span class="p">}){</span><span class="n">M</span><span class="p">}(</span><span class="n">x</span><span class="o">::</span><span class="n">SVector</span><span class="p">{</span><span class="mi">3</span><span class="p">})</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">trans</span><span class="o">.</span><span class="n">m</span> <span class="o">*</span> <span class="n">x</span><span class="p">;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">/</span> <span class="n">out</span><span class="p">[</span><span class="k">end</span><span class="p">];</span>
+    <span class="n">SVector</span><span class="p">{</span><span class="mi">2</span><span class="p">}(</span><span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">2</span><span class="p">])</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="p">(</span><span class="n">trans</span><span class="o">::</span><span class="n">Homography</span><span class="p">{</span><span class="n">M</span><span class="p">}){</span><span class="n">M</span><span class="p">}(</span><span class="n">x</span><span class="o">::</span><span class="n">SVector</span><span class="p">{</span><span class="mi">2</span><span class="p">})</span>
+    <span class="n">trans</span><span class="p">(</span><span class="n">SVector</span><span class="p">{</span><span class="mi">3</span><span class="p">}([</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">]))</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="p">(</span><span class="n">trans</span><span class="o">::</span><span class="n">Homography</span><span class="p">{</span><span class="n">M</span><span class="p">}){</span><span class="n">M</span><span class="p">}(</span><span class="n">x</span><span class="o">::</span><span class="kt">CartesianIndex</span><span class="p">{</span><span class="mi">2</span><span class="p">})</span>
+    <span class="n">trans</span><span class="p">(</span><span class="n">SVector</span><span class="p">{</span><span class="mi">3</span><span class="p">}([</span><span class="n">collect</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="nb">I</span><span class="p">);</span> <span class="mi">1</span><span class="p">]))</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="p">(</span><span class="n">trans</span><span class="o">::</span><span class="n">Homography</span><span class="p">{</span><span class="n">M</span><span class="p">}){</span><span class="n">M</span><span class="p">}(</span><span class="n">x</span><span class="o">::</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Int</span><span class="p">})</span>
+    <span class="n">trans</span><span class="p">(</span><span class="kt">CartesianIndex</span><span class="p">{</span><span class="mi">2</span><span class="p">}(</span><span class="n">x</span><span class="p">))</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="p">(</span><span class="n">trans</span><span class="o">::</span><span class="n">Homography</span><span class="p">{</span><span class="n">M</span><span class="p">}){</span><span class="n">M</span><span class="p">}(</span><span class="n">x</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">CartesianIndex</span><span class="p">{</span><span class="mi">2</span><span class="p">},</span> <span class="mi">1</span><span class="p">})</span>
+    <span class="kt">CartesianIndex</span><span class="p">{</span><span class="mi">2</span><span class="p">}</span><span class="o">.</span><span class="p">([</span><span class="n">tuple</span><span class="p">(</span><span class="n">y</span><span class="o">...</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">trunc</span><span class="o">.</span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="n">collect</span><span class="o">.</span><span class="p">(</span><span class="n">trans</span><span class="o">.</span><span class="p">(</span><span class="n">x</span><span class="p">)))])</span>
+<span class="k">end</span>
+
+<span class="c"># we need to override the inverse function on our homography</span>
+<span class="k">function</span> <span class="n">Base</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">trans</span><span class="o">::</span><span class="n">Homography</span><span class="p">)</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">inv</span><span class="p">(</span><span class="n">trans</span><span class="o">.</span><span class="n">m</span><span class="p">);</span>
+    <span class="n">Homography</span><span class="p">(</span><span class="n">i</span> <span class="o">./</span> <span class="n">i</span><span class="p">[</span><span class="k">end</span><span class="p">])</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's test our homography function (and the displaying of the result) on a simple transformation we apply on our "wild" test images from above.</p>
+<p>Using the <code>CoordinateTransformations</code> package, let's rotate one of our images a little it. Because we know the absolute transformation (a rotation), we can write it in terms of a homography and test that our <code>compute_homography</code> function works as expected.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">rotation</span> <span class="o">=</span> <span class="n">LinearMap</span><span class="p">(</span><span class="n">RotMatrix</span><span class="p">(</span><span class="nb">pi</span><span class="o">/</span><span class="mi">8</span><span class="p">));</span>
+<span class="n">img1rot</span> <span class="o">=</span> <span class="n">warp</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">rotation</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[10]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/06-image-stitching-part-2/06-image-stitching-part-2_19_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Transform-Image">Transform Image<a class="anchor-link" href="#Transform-Image">&#182;</a></h2><p>Now that we have a homography (transformation) matrix, we need to apply the homography to each pixel in the first image. This will assign a new location to each pixel, effectively warping the original image into the same "space" as the second image.</p>
+<p>A homography transforms an image into a new space. The inverse (i.e. the matrix inverse) of the homography transforms the transformed image back into the original image. To see what that's like, let's warp the rotated image by the inverse of the rotation.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">out</span> <span class="o">=</span> <span class="n">warp</span><span class="p">(</span><span class="n">img1rot</span><span class="p">,</span> <span class="n">inv</span><span class="p">(</span><span class="n">rotation</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[11]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/06-image-stitching-part-2/06-image-stitching-part-2_21_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The type of the output image is an OffsetArray - a type that we'll look at later.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">typeof</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[12]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>OffsetArrays.OffsetArray{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2,Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's use this simple rotated image to test our maching and homography computation code by computing the homography, drawing the two images side by side, and drawing the point matches. In the ideal case, we want the computed homography from our <code>compute_homography</code> function to exactly find the rotation.</p>
+<p>The first step is to find the matches between the image and the rotated image.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">matches_rot</span> <span class="o">=</span> <span class="n">match_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img1rot</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">);</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's visualize all the matches we got and see what happens:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">draw_matches</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img1rot</span><span class="p">,</span> <span class="n">matches_rot</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[14]:</div>
+
+<div class="output_area">
+
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre><span class="ansi-yellow-intense-fg ansi-bold">WARNING: </span><span class="ansi-yellow-fg">one(ColorTypes.RGB{Float64}) will soon switch to returning 1; you might need to switch to `oneunit`</span>
+Stacktrace:
+ [1] <span class="ansi-bold">depwarn</span><span class="ansi-bold">(</span>::String, ::Symbol<span class="ansi-bold">)</span> at <span class="ansi-bold">./deprecated.jl:70</span>
+ [2] <span class="ansi-bold">one</span><span class="ansi-bold">(</span>::Type{ColorTypes.RGB{Float64}}<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/ColorVectorSpace/src/ColorVectorSpace.jl:356</span>
+ [3] <span class="ansi-bold">draw!</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/ImageDraw/src/line2d.jl:64</span> [inlined] (repeats 2 times)
+ [4] <span class="ansi-bold">draw_matches</span><span class="ansi-bold">(</span>::Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}, ::OffsetArrays.OffsetArray{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2,Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}}, ::Array{Array{CartesianIndex{2},1},1}<span class="ansi-bold">)</span> at <span class="ansi-bold">./In[4]:20</span>
+ [5] <span class="ansi-bold">include_string</span><span class="ansi-bold">(</span>::String, ::String<span class="ansi-bold">)</span> at <span class="ansi-bold">./loading.jl:515</span>
+ [6] <span class="ansi-bold">execute_request</span><span class="ansi-bold">(</span>::ZMQ.Socket, ::IJulia.Msg<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/IJulia/src/execute_request.jl:180</span>
+ [7] <span class="ansi-bold">(::Compat.#inner#14{Array{Any,1},IJulia.#execute_request,Tuple{ZMQ.Socket,IJulia.Msg}})</span><span class="ansi-bold">(</span><span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/Compat/src/Compat.jl:332</span>
+ [8] <span class="ansi-bold">eventloop</span><span class="ansi-bold">(</span>::ZMQ.Socket<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/IJulia/src/eventloop.jl:8</span>
+ [9] <span class="ansi-bold">(::IJulia.##15#18)</span><span class="ansi-bold">(</span><span class="ansi-bold">)</span> at <span class="ansi-bold">./task.jl:335</span>
+while loading In[14], in expression starting on line 1
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/06-image-stitching-part-2/06-image-stitching-part-2_27_1.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Looks great! We seem to have matched the points in this image pretty nicely (except for whatever happens with the sky). Let's see if we get the same luck with our computed homography!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">H_computed_rot</span> <span class="o">=</span> <span class="n">compute_homography</span><span class="p">(</span><span class="n">matches_rot</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[15]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>Homography{Float64}([0.00309203 -0.357604 134.69; -0.573237 -0.544575 299.596; -0.00122728 -0.00230251 1.0])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We can see that the computed homography matrix looks unintuitively strange (it doesn't look like a rotation matrix, if you're used to manipulating those). So instead we will just apply our homography to our image and draw matches between them to visualize.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">warp</span><span class="p">(</span><span class="n">img1rot</span><span class="p">,</span> <span class="n">H_computed_rot</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[16]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/06-image-stitching-part-2/06-image-stitching-part-2_31_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Oops, that doesn't look great! Let's finish the last step of homography computation to make this more robust!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="RANSAC:-Improving-Homography-Estimation">RANSAC: Improving Homography Estimation<a class="anchor-link" href="#RANSAC:-Improving-Homography-Estimation">&#182;</a></h2><p>The homography computation is a linear estimator. Like all linear estimators, it is not robust to outliers. We got such a bad image above because some of the matches (mostly in the sky) because there were a number of matches that are outliers.</p>
+<p>The RANSAC (<strong>RAN</strong>dom <strong>SA</strong>mple <strong>C</strong>onsensus) method of homography estimation was invented to reduce the effect of outliers on the homography computation. The idea is simple: we can compute an exact homography using four random matched points, and see how well those points fit the other matches. The points that fit the matches well are called inliners (as opposed to outliers). Keep doing this for a number of iterations: one of the homographies that fits the point the best (i.e. had those most inliers). Take ALL those points, and recompute a least-squares homography using all those inliers.</p>
+<p>Let's get to it!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">apply_ransac</span><span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="n">n_iters</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">best_homography_inliers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">best_num_inliers</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="c"># for N times, use 8 points to estimate the homography</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="kp">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">n_iters</span>
+        <span class="c"># randomly pick 4 points from matches</span>
+        <span class="n">matches_sub</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+        <span class="c"># calculate the homography</span>
+        <span class="n">H_sub</span> <span class="o">=</span> <span class="n">compute_homography</span><span class="p">(</span><span class="n">matches_sub</span><span class="p">)</span>
+
+        <span class="c"># calculate the number of inliers.</span>
+        <span class="c"># apply the homography to all the points</span>
+        <span class="c"># in the first image. calculate descriptors.</span>
+        <span class="n">img1_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="kp">in</span> <span class="n">matches</span><span class="p">]</span>
+        <span class="n">img2_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="kp">in</span> <span class="n">matches</span><span class="p">]</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">H_sub</span><span class="p">(</span><span class="n">img1_points</span><span class="p">)</span>
+        <span class="n">dists</span> <span class="o">=</span> <span class="p">[</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="nb">I</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">^</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="nb">I</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">^</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="p">(</span><span class="n">out</span> <span class="o">-</span> <span class="n">img2_points</span><span class="p">)]</span>
+
+        <span class="c"># if diff &lt; epsilon, its an inliner</span>
+        <span class="n">inliner_indices</span> <span class="o">=</span> <span class="n">dists</span> <span class="o">.&lt;</span> <span class="n">eps</span>
+        <span class="n">num_inliers</span> <span class="o">=</span> <span class="n">sum</span><span class="p">(</span><span class="n">inliner_indices</span><span class="p">)</span>
+        
+        <span class="c"># if this is the best we got so far, store it</span>
+        <span class="c"># and all the inliers</span>
+        <span class="k">if</span> <span class="n">num_inliers</span> <span class="o">&gt;</span> <span class="n">best_num_inliers</span>
+            <span class="n">best_homography_inliers</span> <span class="o">=</span> <span class="n">matches</span><span class="p">[</span><span class="n">inliner_indices</span><span class="p">]</span>
+            <span class="n">best_num_inliers</span> <span class="o">=</span> <span class="n">num_inliers</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+    
+    <span class="c"># calculate the new homography with all the inliers</span>
+    <span class="n">H</span> <span class="o">=</span> <span class="n">compute_homography</span><span class="p">(</span><span class="n">best_homography_inliers</span><span class="p">)</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[17]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>apply_ransac (generic function with 3 methods)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now that we have the RANSAC method, we just need to apply it. We've picked an arbitrary number of iterations to make sure we have enough chances to find the right combination of points. Picking the right number of iterations is a bit of a tricky thing, but more is (usually) never worse. Let's go with a few hundred and see where that leaves us.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">H_ransac_rot</span> <span class="o">=</span> <span class="n">apply_ransac</span><span class="p">(</span><span class="n">matches_rot</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[18]:</div>
+
+<div class="output_area">
+
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre><span class="ansi-yellow-intense-fg ansi-bold">WARNING: </span><span class="ansi-yellow-fg">trunc{T}(::Type{T}, x::AbstractArray) is deprecated, use trunc.(T, x) instead.</span>
+Stacktrace:
+ [1] <span class="ansi-bold">depwarn</span><span class="ansi-bold">(</span>::String, ::Symbol<span class="ansi-bold">)</span> at <span class="ansi-bold">./deprecated.jl:70</span>
+ [2] <span class="ansi-bold">trunc</span><span class="ansi-bold">(</span>::Type{Int64}, ::Array{Float64,1}<span class="ansi-bold">)</span> at <span class="ansi-bold">./deprecated.jl:57</span>
+ [3] <span class="ansi-bold">macro expansion</span> at <span class="ansi-bold">./broadcast.jl:153</span> [inlined]
+ [4] <span class="ansi-bold">macro expansion</span> at <span class="ansi-bold">./simdloop.jl:73</span> [inlined]
+ [5] <span class="ansi-bold">macro expansion</span> at <span class="ansi-bold">./broadcast.jl:147</span> [inlined]
+ [6] <span class="ansi-bold">_broadcast!</span> at <span class="ansi-bold">./broadcast.jl:139</span> [inlined]
+ [7] <span class="ansi-bold">broadcast_t</span> at <span class="ansi-bold">./broadcast.jl:268</span> [inlined]
+ [8] <span class="ansi-bold">broadcast_c</span> at <span class="ansi-bold">./broadcast.jl:314</span> [inlined]
+ [9] <span class="ansi-bold">broadcast</span> at <span class="ansi-bold">./broadcast.jl:434</span> [inlined]
+ [10] <span class="ansi-bold">(::Homography{Float64})</span><span class="ansi-bold">(</span>::Array{CartesianIndex{2},1}<span class="ansi-bold">)</span> at <span class="ansi-bold">./In[9]:24</span>
+ [11] <span class="ansi-bold">apply_ransac</span><span class="ansi-bold">(</span>::Array{Array{CartesianIndex{2},1},1}, ::Int64, ::Int64<span class="ansi-bold">)</span> at <span class="ansi-bold">./In[17]:18</span>
+ [12] <span class="ansi-bold">apply_ransac</span><span class="ansi-bold">(</span>::Array{Array{CartesianIndex{2},1},1}, ::Int64<span class="ansi-bold">)</span> at <span class="ansi-bold">./In[17]:2</span>
+ [13] <span class="ansi-bold">include_string</span><span class="ansi-bold">(</span>::String, ::String<span class="ansi-bold">)</span> at <span class="ansi-bold">./loading.jl:515</span>
+ [14] <span class="ansi-bold">execute_request</span><span class="ansi-bold">(</span>::ZMQ.Socket, ::IJulia.Msg<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/IJulia/src/execute_request.jl:180</span>
+ [15] <span class="ansi-bold">(::Compat.#inner#14{Array{Any,1},IJulia.#execute_request,Tuple{ZMQ.Socket,IJulia.Msg}})</span><span class="ansi-bold">(</span><span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/Compat/src/Compat.jl:332</span>
+ [16] <span class="ansi-bold">eventloop</span><span class="ansi-bold">(</span>::ZMQ.Socket<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/IJulia/src/eventloop.jl:8</span>
+ [17] <span class="ansi-bold">(::IJulia.##15#18)</span><span class="ansi-bold">(</span><span class="ansi-bold">)</span> at <span class="ansi-bold">./task.jl:335</span>
+while loading In[18], in expression starting on line 1
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>Homography{Float64}([0.920363 0.380754 0.458429; -0.384753 0.921107 192.324; -7.72445e-6 -3.19621e-6 1.0])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now that looks more like a rotation matrix! Let's take a look!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">warp</span><span class="p">(</span><span class="n">img1rot</span><span class="p">,</span> <span class="n">H_ransac_rot</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[19]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/06-image-stitching-part-2/06-image-stitching-part-2_38_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Bam!</p>
+<p>Let's see how far we get when we apply what we have so far to the original two images:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[20]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">matches</span> <span class="o">=</span> <span class="n">match_points</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">)</span>
+<span class="n">H_ransac</span> <span class="o">=</span> <span class="n">apply_ransac</span><span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+<span class="n">new_img</span> <span class="o">=</span> <span class="n">warp</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="n">H_ransac</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[20]:</div>
+
+<div class="output_area">
+
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre><span class="ansi-yellow-intense-fg ansi-bold">WARNING: </span><span class="ansi-yellow-fg">trunc{T}(::Type{T}, x::AbstractArray) is deprecated, use trunc.(T, x) instead.</span>
+Stacktrace:
+ [1] <span class="ansi-bold">depwarn</span><span class="ansi-bold">(</span>::String, ::Symbol<span class="ansi-bold">)</span> at <span class="ansi-bold">./deprecated.jl:70</span>
+ [2] <span class="ansi-bold">trunc</span><span class="ansi-bold">(</span>::Type{Int64}, ::Array{Float64,1}<span class="ansi-bold">)</span> at <span class="ansi-bold">./deprecated.jl:57</span>
+ [3] <span class="ansi-bold">macro expansion</span> at <span class="ansi-bold">./broadcast.jl:153</span> [inlined]
+ [4] <span class="ansi-bold">macro expansion</span> at <span class="ansi-bold">./simdloop.jl:73</span> [inlined]
+ [5] <span class="ansi-bold">macro expansion</span> at <span class="ansi-bold">./broadcast.jl:147</span> [inlined]
+ [6] <span class="ansi-bold">_broadcast!</span> at <span class="ansi-bold">./broadcast.jl:139</span> [inlined]
+ [7] <span class="ansi-bold">broadcast_t</span> at <span class="ansi-bold">./broadcast.jl:268</span> [inlined]
+ [8] <span class="ansi-bold">broadcast_c</span> at <span class="ansi-bold">./broadcast.jl:314</span> [inlined]
+ [9] <span class="ansi-bold">broadcast</span> at <span class="ansi-bold">./broadcast.jl:434</span> [inlined]
+ [10] <span class="ansi-bold">(::Homography{Float64})</span><span class="ansi-bold">(</span>::Array{CartesianIndex{2},1}<span class="ansi-bold">)</span> at <span class="ansi-bold">./In[9]:24</span>
+ [11] <span class="ansi-bold">apply_ransac</span><span class="ansi-bold">(</span>::Array{Array{CartesianIndex{2},1},1}, ::Int64, ::Int64<span class="ansi-bold">)</span> at <span class="ansi-bold">./In[17]:18</span>
+ [12] <span class="ansi-bold">apply_ransac</span><span class="ansi-bold">(</span>::Array{Array{CartesianIndex{2},1},1}, ::Int64<span class="ansi-bold">)</span> at <span class="ansi-bold">./In[17]:2</span>
+ [13] <span class="ansi-bold">include_string</span><span class="ansi-bold">(</span>::String, ::String<span class="ansi-bold">)</span> at <span class="ansi-bold">./loading.jl:515</span>
+ [14] <span class="ansi-bold">execute_request</span><span class="ansi-bold">(</span>::ZMQ.Socket, ::IJulia.Msg<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/IJulia/src/execute_request.jl:180</span>
+ [15] <span class="ansi-bold">(::Compat.#inner#14{Array{Any,1},IJulia.#execute_request,Tuple{ZMQ.Socket,IJulia.Msg}})</span><span class="ansi-bold">(</span><span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/Compat/src/Compat.jl:332</span>
+ [16] <span class="ansi-bold">eventloop</span><span class="ansi-bold">(</span>::ZMQ.Socket<span class="ansi-bold">)</span> at <span class="ansi-bold">/home/mprat/.julia/v0.6/IJulia/src/eventloop.jl:8</span>
+ [17] <span class="ansi-bold">(::IJulia.##15#18)</span><span class="ansi-bold">(</span><span class="ansi-bold">)</span> at <span class="ansi-bold">./task.jl:335</span>
+while loading In[20], in expression starting on line 2
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/06-image-stitching-part-2/06-image-stitching-part-2_40_1.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Yay! Our homography computation worked! Now, the last step is to merge the images together into a single canvas.</p>
+<h2 id="Merging-Images">Merging Images<a class="anchor-link" href="#Merging-Images">&#182;</a></h2><p>Now that we have the right transformation (and it looks ok), the last step to stitching the images together in the same canvas.</p>
+<p>The idea goes like this: both images we want to merge originally came from the same "coordinate system." A homography describes the geometric relationship between the two images, and that includes translation. So, all we need to do is figure out the translation between the first and second images, create a new image that contains both, and put the pixels from both images into that same canvas.</p>
+<p>Now this is where Julia really shines. Remember how the warped image from above is an <code>OffsetArray</code>? Like this:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">typeof</span><span class="p">(</span><span class="n">new_img</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[21]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>OffsetArrays.OffsetArray{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2,Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We will use this to our advantage when merging images. <a href="https://github.com/JuliaArrays/OffsetArrays.jl">OffsetArrays</a> are basically arrays, but with arbitrary start and stop indices. So while a "standard" image starts at (0,0) and goes to (1280,720) or something similar, an OffsetArray has the same height and width but might start at (-10, -100).</p>
+<p>So how we'll use this is as follows: our new merged image canvas will be an <code>OffsetArray</code>. The sizes will be determined by the two images we want to merge (one is an <code>AbstractArray</code>, or "regular image" and one is an <code>OffsetArray</code>, or "warped image").</p>
+<p><em>As an aside, I figured out that to find the "offsets" of an <code>OffsetArray</code> you use <code>.start</code> and <code>.stop</code> on the <code>axes().val</code> object.</em></p>
+<p>Once we have the dimensions of this new offset array, we are just going to put the original image into it starting at coordinate (1, 1) and ending at the size of the image.</p>
+<p>For the merged image, we need to do something a bit more nuanced: because we projected the image into a new space, the places were there was no original pixel from the image became black. In our merging code, we want to ignore these pixels, and only place the non-black pixels into the new canvas. So we iterate through all the pixels (using <code>indices()</code> as an iterator, like suggested in the <a href="https://docs.julialang.org/en/v0.6.2/devdocs/offset-arrays/">Julia docs about <code>OffsetArrays</code></a>, and ignore any black pixels.</p>
+<p>Once we're one, our resultant new, merged image is an <code>OffsetArray</code> that is exactly an image!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[22]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">using</span> <span class="n">OffsetArrays</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[23]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">merge_images</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">new_img</span><span class="p">)</span>
+    <span class="n">axis1_size</span> <span class="o">=</span>
+        <span class="n">max</span><span class="p">(</span><span class="n">axes</span><span class="p">(</span><span class="n">new_img</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">val</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span>
+        <span class="n">min</span><span class="p">(</span><span class="n">axes</span><span class="p">(</span><span class="n">new_img</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">val</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">axis2_size</span> <span class="o">=</span>
+        <span class="n">max</span><span class="p">(</span><span class="n">axes</span><span class="p">(</span><span class="n">new_img</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">val</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">-</span>
+        <span class="n">min</span><span class="p">(</span><span class="n">axes</span><span class="p">(</span><span class="n">new_img</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">val</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    
+    <span class="c"># our new image is an offset array</span>
+    <span class="n">combined_image</span> <span class="o">=</span> <span class="n">OffsetArray</span><span class="p">(</span>
+        <span class="n">zeros</span><span class="p">(</span><span class="n">RGB</span><span class="p">{</span><span class="n">N0f8</span><span class="p">},</span> <span class="n">axis1_size</span><span class="p">,</span> <span class="n">axis2_size</span><span class="p">),</span> <span class="p">(</span>
+            <span class="n">min</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">axes</span><span class="p">(</span><span class="n">new_img</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">val</span><span class="o">.</span><span class="n">start</span><span class="p">),</span>
+            <span class="n">min</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">axes</span><span class="p">(</span><span class="n">new_img</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">val</span><span class="o">.</span><span class="n">start</span><span class="p">)))</span>
+    
+    <span class="c"># we just put the image directly into the new combined canvas</span>
+    <span class="n">combined_image</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="n">size</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="o">:</span><span class="n">size</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="n">img1</span>
+    
+    <span class="c"># merge all the pixels into the new image that are not black</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="kp">in</span> <span class="n">indices</span><span class="p">(</span><span class="n">new_img</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="kp">in</span> <span class="n">indices</span><span class="p">(</span><span class="n">new_img</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">new_img</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="n">colorant</span><span class="s">&quot;black&quot;</span>
+                <span class="n">combined_image</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_img</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+    <span class="n">combined_image</span>
+<span class="k">end</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[23]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>merge_images (generic function with 1 method)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[24]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-julia"><pre><span></span><span class="n">merge_images</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">new_img</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="prompt output_prompt">Out[24]:</div>
+
+<div class="output_area">
+
+
+
+
+<div class="output_png output_subarea output_execute_result">
+<img src="/assets/imgs/06-image-stitching-part-2/06-image-stitching-part-2_46_0.png"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Voila!</p>
+<h2 id="Conclusion-and-Summary">Conclusion and Summary<a class="anchor-link" href="#Conclusion-and-Summary">&#182;</a></h2><p>Figuring out how to do panomara stitching in Julia was a LOT of fun. It also took me a while, since I had to learn a bunch of new packages and new concepts. But, all together, stiching two images together in Julia is fairly straightforward, and we generate a merged image in the process.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In this investigation I learned a few things:</p>
+<ul>
+<li>How <code>OffsetArrays</code> can make merging images insanely easy! (the corresponding code in C++ is complicated because it involves manually finding the size of the new image together with the offsets)</li>
+<li>How multiple dispatch can make applying a homography really easy</li>
+<li>How <code>StaticArrays</code> and <code>CoordinateTransformations</code> make it easy to apply transformations to images.</li>
+</ul>
+<p>The caveat is that I did all of this using Julia 0.6. At the time of this writing, some JuliaImages packages weren't ready for 0.7 and above, but hopefully that will change soon.</p>
+<p>I hope someone else learning Julia will find my investigations useful. Thanks for reading, and stay tuned for more!</p>
+
+</div>
+</div>
+</div>
+ 
+

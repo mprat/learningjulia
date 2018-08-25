@@ -170,7 +170,7 @@ c.NbConvertApp.export_format = 'html'
 c.NbConvertApp.output_files_dir = '../../assets/imgs/{notebook_name}'
 
 c.HTMLExporter.preprocessors = [
-    # 'nbconvert.preprocessors.ExecutePreprocessor',
+    'nbconvert.preprocessors.ExecutePreprocessor',
     # ExecuteWithInteractPreprocessor,
     'nbconvert.preprocessors.coalesce_streams',
     'nbconvert.preprocessors.ExtractOutputPreprocessor',
@@ -179,11 +179,11 @@ c.HTMLExporter.preprocessors = [
 c.HTMLExporter.template_file = 'notebooks/jekyll.tpl'
 c.HTMLExporter.filters = {"jekyllimgurl": jekyllurl, "svg_filter": svg_filter}
 
-# # if there's an error in one of the cells let the execution keep going
-# c.ExecutePreprocessor.allow_errors = True
-# # disable the timeout
-# c.ExecutePreprocessor.timeout = -1
-# c.ExecutePreprocessor.iopub_timeout = 10
+# if there's an error in one of the cells let the execution keep going
+c.ExecutePreprocessor.allow_errors = True
+# disable the timeout
+c.ExecutePreprocessor.timeout = -1
+c.ExecutePreprocessor.iopub_timeout = 10
 
 # write the final HTML files into the _include/notebooks directory
 c.FilesWriter.build_directory = "_includes/notebooks/"
