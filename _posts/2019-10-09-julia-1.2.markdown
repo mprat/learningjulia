@@ -283,4 +283,4 @@ Now we can get started with some Flux! I'm off to play with Flux and Julia - unt
 
 # The Goal
 
-Ultimately, I think to accomplish my goal, I want to re-implement something like Google's Voice Cloning (https://github.com/CorentinJ/Real-Time-Voice-Cloning) into Julia.
+Ultimately, I think to accomplish my goal, I want to re-implement something like [Google's Voice Cloning](https://github.com/CorentinJ/Real-Time-Voice-Cloning) into Julia.
