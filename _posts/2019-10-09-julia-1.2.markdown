@@ -1,0 +1,286 @@
+---
+layout: post
+title:  "Julia v1.2"
+date:   2019-10-09
+mathjax: false
+widgets: false
+---
+
+After many (many...) months of not using Julia, I'm taking the plunge again! I have a new ML project I want to tackle, and want to use it as a way to beef up my Julia skills. Since I've already been documenting my journey with Julia, I will continue to do it here. First up, upgrading my current environment to Julia 1.2!
+
+<!--more-->
+
+# Updating Julia to 1.2.0
+
+Since I'm on a Linux system (behind in that too, still on 16.04...), installing and upgrading Julia should be a piece of cake.
+
+First, I downloaded the latest stable release of Julia [as recommended by the official Getting Started docs](https://julialang.org/downloads/) and extracted the tarball. I have all my Julia installations (together with some other software) in a folder called `~/Documents/software/` that in my `~/.bashrc` file modify my `PATH` variable to point to the appropriate path:
+
+```
+export PATH=$PATH:$HOME/Documents/software/julia-1.2.0/bin/
+```
+
+After re-loading my shell, success!
+
+```
+[mprat@mprat-ThinkPad-T430 ~]$ cd ~/Documents/repos/julia-play/
+[mprat@mprat-ThinkPad-T430 julia-play]$ which julia
+/home/mprat/Documents/software/julia-1.2.0/bin//julia
+[mprat@mprat-ThinkPad-T430 julia-play]$ julia
+               _
+   _       _ _(_)_     |  Documentation: https://docs.julialang.org
+  (_)     | (_) (_)    |
+   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
+  | | | | | | |/ _` |  |
+  | | |_| | | | (_| |  |  Version 1.2.0 (2019-08-20)
+ _/ |\__'_|_|_|\__'_|  |  Official https://julialang.org/ release
+|__/                   |
+
+julia> 
+```
+
+Now we can get to the fun part - learning what's new in Julia!
+
+# The Target Project
+
+The sample project I want to tackle in Julia is what I am calling _Trebekian_. My friends and I are really into pub trivia, but we all also like hosting people at our houses. To facilitate having both, my very helpful partner [Robin](https://robindeits.com) used the [Open Trivia Database](https://opentdb.com/) to make a [trivia generator in Julia](https://github.com/rdeits/Trivia.jl). It's all documented and everything, so you should check it out!
+
+We tried this with a group of friends and realized the fun factor was high, but could be made even higher with the addition of Alex Trebek reading the questions out loud. Barring actually having Alex Trebek at the ready, we decided that it is worth exploring the audio-generation literature and techniques to see if we can train a neural network to read Jeopardy questions using Alex Trebek's voice, trained on the many freely-available video and audio online of Alex Trebek himself.
+
+For me this is great because I work on computer vision professionally - I have high fluency in neural networks, data, and programming, but I have never worked on an audio project of any kind. Also, I haven't used Julia in a long time, so it seemed like a great match.
+
+This, _Trebekian_ was born.
+
+# Getting Started
+
+To get started, Robin gave me a quick crash course in how to set up the environment. First we obviously need to create the project repository.
+
+Julia 1.2 has some provisions for helping you set up your project and developing in it with the right environment (aka the Package Manager). I want to start off structuring this project as a library that I can import into a `jupyter notebook` or just a series of shell scripts from Julia, so we create the project that way, by running the `generate Trebekian` command from a Julia shell after activating package mode by pressing `]`:
+
+```
+[mprat@mprat-ThinkPad-T430 repos]$ julia
+               _
+   _       _ _(_)_     |  Documentation: https://docs.julialang.org
+  (_)     | (_) (_)    |
+   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
+  | | | | | | |/ _` |  |
+  | | |_| | | | (_| |  |  Version 1.2.0 (2019-08-20)
+ _/ |\__'_|_|_|\__'_|  |  Official https://julialang.org/ release
+|__/                   |
+
+(v1.2) pkg> generate Trebekian
+Generating project Trebekian:
+    Trebekian/Project.toml
+    Trebekian/src/Trebekian.jl
+
+julia> 
+```
+
+At this point, Julia has generated for me a `Project.toml`, which describes the package that we just created (just some basic stuff), and automatically created the `src/` directory where the library itself will live. The `Project.toml` file is very simple and looks like this:
+
+```
+name = "Trebekian"
+uuid = "e54295aa-76b4-48ff-a2c0-e8824c6aa8c7"
+authors = ["Michele Pratusevich <mprat@alum.mit.edu>"]
+version = "0.1.0"
+```
+
+Nothing fancy - yet!
+
+We can drop into the shell by typing `;`, `cd`-ing into the directory and running shell commands like `ls`:
+
+```
+julia> 
+
+shell> cd Trebekian/
+/home/mprat/Documents/repos/Trebekian
+
+shell> ls
+Project.toml  src
+```
+
+Now that we're convinced the environment is good to go and we are in the `Trebekian/` folder, we can activate the Julia environment for the package so we can start developing. Enter package mode by typing `]` and type `activate .`. What we did is equivalent to doing a `venv bin/activate` in Python - we've activated the Julia environment for this package.
+
+```
+(v1.2) pkg> activate .
+Activating environment at `~/Documents/repos/Trebekian/Project.toml`
+
+(Trebekian) pkg>
+```
+
+Note how after we activated the environment, the environment tag changd from `v1.2` (i.e. the default Julia shell) to `Trebekian` (i.e. the current project)
+
+Now, we want to actually install some packages so we can start coding! The Julia package I want to use for the ML portion of this project is [Flux.jl](https://github.com/FluxML/Flux.jl), the Julia-based ML library with GPU support. So to install the package, you drop into package mode and simply `add` the package:
+
+```
+(Trebekian) pkg> add Flux
+
+(stuff happens)
+
+(Trebekian) pkg>
+```
+
+A much more in-depth discussion of the package manager is described on the [Pkg.jl docs](https://julialang.github.io/Pkg.jl/latest/getting-started/).
+
+# Playing with Flux
+
+Since I am going to be working with audio for this project, I figured it would be a good idea to walk through a [Flux tutorial for speech recognition from the Flux model zoo](https://github.com/FluxML/model-zoo/tree/master/audio/speech-blstm).
+
+To do that I want to clone Flux's own model zoo package, activate the environment they've set up in their own package, and run their model.
+
+```
+[mprat@mprat-ThinkPad-T430 repos]$ git clone https://github.com/FluxML/model-zoo/
+Cloning into 'model-zoo'...
+remote: Enumerating objects: 1, done.
+remote: Counting objects: 100% (1/1), done.
+remote: Total 1913 (delta 0), reused 0 (delta 0), pack-reused 1912
+Receiving objects: 100% (1913/1913), 689.95 KiB | 0 bytes/s, done.
+Resolving deltas: 100% (964/964), done.
+Checking connectivity... done.
+[mprat@mprat-ThinkPad-T430 repos]$ cd model-zoo/
+[mprat@mprat-ThinkPad-T430 model-zoo (master=)]$ julia
+               _
+   _       _ _(_)_     |  Documentation: https://docs.julialang.org
+  (_)     | (_) (_)    |
+   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
+  | | | | | | |/ _` |  |
+  | | |_| | | | (_| |  |  Version 1.2.0 (2019-08-20)
+ _/ |\__'_|_|_|\__'_|  |  Official https://julialang.org/ release
+|__/                   |
+
+(v1.2) pkg> activate^C
+
+shell> ls
+audio  games  LICENSE.md  other  README.md  script  text  tutorials  vision
+
+shell> cd audio
+/home/mprat/Documents/repos/model-zoo/audio
+
+shell> ls
+speech-blstm
+
+shell> cd speech-blstm/
+/home/mprat/Documents/repos/model-zoo/audio/speech-blstm
+
+shell> ls
+00-data.jl  01-speech-blstm.jl  Manifest.toml  Project.toml  README.md  test  TIMIT  train
+
+(v1.2) pkg> activate .
+Activating environment at `~/Documents/repos/model-zoo/audio/speech-blstm/Project.toml`
+
+(FramewiseSpeechNetwork) pkg> instantiate
+
+(some stuff happens)
+```
+
+What this did was re-create this particular model zoo environment on my local machine, and I can run the various scripts I want to play with. From the official docs: "If the project contains a manifest, this will install the packages in the same state that is given by that manifest. Otherwise, it will resolve the latest versions of the dependencies compatible with the project."
+
+Upon getting to this stage I realized I don't have the TIMIT (i.e. phoneme) dataset installed locally, so instead I am just going to look through the Flux / Audio example code and see what I can do.
+
+# Back to Trebekian - installing Revise.jl
+
+```
+[mprat@mprat-ThinkPad-T430 Trebekian]$ julia
+               _
+   _       _ _(_)_     |  Documentation: https://docs.julialang.org
+  (_)     | (_) (_)    |
+   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
+  | | | | | | |/ _` |  |
+  | | |_| | | | (_| |  |  Version 1.2.0 (2019-08-20)
+ _/ |\__'_|_|_|\__'_|  |  Official https://julialang.org/ release
+|__/                   |
+
+(v1.2) pkg> activate .
+Activating environment at `~/Documents/repos/Trebekian/Project.toml`
+
+(Trebekian) pkg> 
+
+(Trebekian) pkg> 
+
+julia> using Trebekian
+[ Info: Recompiling stale cache file /home/mprat/.julia/compiled/v1.2/Trebekian/fI2q9.ji for Trebekian [e54295aa-76b4-48ff-a2c0-e8824c6aa8c7]
+
+julia> Trebekian.greet()
+Hello World!
+```
+
+Cool! Now let's change our source code for the function to print `Hello Worlds!` instead.
+
+```
+julia> Trebekian.greet()
+Hello World!
+julia> 
+```
+
+Notice how the package does not get auto-compiled and usable in our shell. If we restart Julia, this does happen, but we want to be more efficient. Enter [Revise.jl](https://github.com/timholy/Revise.jl). It basically does compilation for changed functions automatically under the hood, further easing development. Let's get started!
+
+First, we want to install it in our GLOBAL Julia installation, not just for the Trebekian project. So we deactivate our Trebekian environment (confusingly just by calling `activate` with no arguments - apparently there is an open issue to fix this) to drop back into the Julia shell and install Revise:
+
+```
+(Trebekian) pkg> activate
+Activating environment at `~/.julia/environments/v1.2/Project.toml`
+
+(v1.2) pkg> 
+
+(v1.2) pkg> 
+
+(v1.2) pkg> add Revise
+
+(some stuff happens)
+```
+
+To make this accessible to Julia on startup, I followed these instructions here on the [Revise official documentation](https://timholy.github.io/Revise.jl/stable/config/#Using-Revise-by-default-1). The `~/.julia/config/startup.jl` does not exist by default, so I had to create the directory chain for this. While I was doing this, I followed the instructions for IJulia setup as well. IJulia is the Julia backend used with jupyter notebooks, so it seems like a worthwhile investment!
+
+Now when we close Julia and start it again, Revise will always be started:
+
+```
+[mprat@mprat-ThinkPad-T430 Trebekian]$ julia
+               _
+   _       _ _(_)_     |  Documentation: https://docs.julialang.org
+  (_)     | (_) (_)    |
+   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
+  | | | | | | |/ _` |  |
+  | | |_| | | | (_| |  |  Version 1.2.0 (2019-08-20)
+ _/ |\__'_|_|_|\__'_|  |  Official https://julialang.org/ release
+|__/                   |
+
+[ Info: Precompiling Revise [295af30f-e4ad-537b-8983-00126c2a3abe]
+julia> 
+```
+
+Now let's try our code example. Right now the `greet()` function looks like this:
+
+```
+greet() = print("Hello World!")
+```
+
+so when we run it in the REPL we get "Hello World!". After we change it to say:
+
+```
+greet() = print("Hello Worlds!")
+```
+
+we do NOT re-launch the Julia kernel, Revise will auto-pick-up the changes!
+
+
+```
+julia> using Trebekian
+[ Info: Recompiling stale cache file /home/mprat/.julia/compiled/v1.2/Trebekian/fI2q9.ji for Trebekian [e54295aa-76b4-48ff-a2c0-e8824c6aa8c7]
+
+julia> Trebekian.greet()
+Hello World!
+
+(we changed the file in between)
+
+julia> Trebekian.greet()
+Hello Worlds!
+julia> 
+```
+
+Awesome!
+
+Now we can get started with some Flux! I'm off to play with Flux and Julia - until next time.
+
+# The Goal
+
+Ultimately, I think to accomplish my goal, I want to re-implement something like Google's Voice Cloning (https://github.com/CorentinJ/Real-Time-Voice-Cloning) into Julia.
