@@ -271,6 +271,24 @@ Tracked 1×1 Array{Float32,2}:
  3.0166523f
 {% endhighlight %}
 
+We also want to sanity-check our results by looking directly at the parameters. An RNN of this type should have 3 parameters: a weight for the input, a weight for the input from the previous timestep, and a bias. When we check the parameters of our model, we would expect that the two weights for the input (current and previous) are both 1 and that the bias is 0, just like in an adder. Thankfully, that's exactly what we have!
+
+{% highlight julia %}
+julia> simple_rnn.cell.Wi
+Tracked 1×1 Array{Float32,2}:
+ 1.0012805f0
+
+julia> simple_rnn.cell.Wh
+Tracked 1×1 Array{Float32,2}:
+ 0.9984506f0
+
+julia> simple_rnn.cell.b
+Tracked 1-element Array{Float32,1}:
+ 1.6119986f-5
+{% endhighlight %}
+
+Yay! We made an adder!
+
 # Incorrect Models
 
 Above, I alluded to model selection as being an important part of machine learning. I am constantly reminded of this in my day job (I do computer vision, software, machine learning, data analysis for robotics) and was reminded of it again here. Before I looked at the Flux definition of an RNN, I didn't realize that the default activation function was `tanh`, which clips the function to the range `[-1, 1]`. Running the same training / evaluation code above but with this model:
