@@ -438,6 +438,6 @@ This clue led me to dive into the Flux RNN implementation to figure out how to s
 
 # The Code
 
-If you want to see the code, check out my implementation of a Basic RNN in the Trebekian repository: https://github.com/mprat/Trebekian.jl/blob/0cdcd33880dd3fc9cc49f3a143f212968f918d91/BasicRNN.jl
+If you want to see the code, check out my implementation of a Basic RNN in the Trebekian repository: [https://github.com/mprat/Trebekian.jl/blob/0cdcd33880dd3fc9cc49f3a143f212968f918d91/BasicRNN.jl](https://github.com/mprat/Trebekian.jl/blob/0cdcd33880dd3fc9cc49f3a143f212968f918d91/BasicRNN.jl).
 
 Happy Julia-ing!
