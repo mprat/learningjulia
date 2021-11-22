@@ -125,7 +125,7 @@
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h1 id="Extracting-Feature-Points">Extracting Feature Points<a class="anchor-link" href="#Extracting-Feature-Points">&#182;</a></h1><p>The first step to stitching two images together is finding feature points, sometimes called <em>keypoints</em>. The main purpose of feature points are to identify points in an image that are "interesting", for some value of interesting. When we are doing image stitching, we generally think points are interesting if they correspond to "corners" in the image. Basically, points at which boundaries happen between objects. The idea is that if we can identify points at the corners of objects, they are unique enough to match nicely if they appear in another image. Of course, this does not happen in practice, but it works fairly well, as we shall see later on.</p>
-<p>One method to finding image corners is the <code>Harris corner</code> method, which uses the Sobel kernel (which I implemented and talked about in <a href="http://learningjulia.com/2017/03/09/imfilter-and-arrays.html">my last post</a>) to find areas in the image that have strong gradients.</p>
+<p>One method to finding image corners is the <code>Harris corner</code> method, which uses the Sobel kernel (which I implemented and talked about in <a href="https://learningjulia.com/2017/03/09/imfilter-and-arrays.html">my last post</a>) to find areas in the image that have strong gradients.</p>
 <p>Thankfully, the <code>Images.jl</code> package we are familiar with implements <a href="https://github.com/JuliaImages/Images.jl/blob/f2b1ad762a18289f5f76fa1070debb460ed6e082/src/corner.jl"><code>imcorner</code></a>:</p>
 
 </div>
