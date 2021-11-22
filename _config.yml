@@ -25,7 +25,7 @@ safe: true
 markdown: kramdown
 highlighter: rouge
 theme: minima
-gems:
+plugins:
   - jekyll-feed
   - jekyll-coffeescript
   - jekyll-gist
